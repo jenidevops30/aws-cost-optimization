@@ -63,15 +63,23 @@ The Streamlit page `dashboard/pages/9_FinOps_Executive_Governance.py` surfaces t
 
 The governance snapshot does **not** rank cloud providers, authorize changes, claim that an anomaly caused a cost increase, fabricate savings, or treat a forecast as a guarantee.
 
-## 8. AWS Integration Principle
+## 8. Production Deployment Readiness — Milestone #16
+
+The deployment-readiness layer adds a deterministic pre-deployment gate around the existing runtime configuration and health model. `src/deployment_readiness.py` checks configuration status, configured data-directory availability, and the explicit read-only operating model.
+
+The dashboard is containerized with `deployment/Dockerfile`. The image uses Python 3.12, installs only the dashboard runtime requirements, exposes Streamlit on port `8501`, and includes a container health check against Streamlit's local health endpoint. `deployment/.dockerignore` excludes Git metadata, virtual environments, environment files, private keys, and common secret directories from the build context.
+
+This milestone does not introduce an AWS deployment target or automated infrastructure provisioning. The container is a deployment artifact; runtime AWS access still follows the standard boto3 credential chain. Live mode remains analysis-only.
+
+## 9. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 9. Confidentiality
+## 10. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 10. Success Criteria
+## 11. Success Criteria
 
 A successful implementation can answer:
 
@@ -89,8 +97,10 @@ A successful implementation can answer:
 12. Can budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
 13. Can executive governance combine these signals without inventing missing evidence?
 14. Can an operator load normalized billing evidence and review governance signals without granting mutation permissions?
+15. Can a deployment candidate be checked for valid runtime configuration, required local paths, and explicit analysis-only safety before release?
+16. Can the dashboard run as a container with a health check and a reduced build context?
 
-## 11. Non-Goals
+## 12. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
@@ -101,3 +111,4 @@ A successful implementation can answer:
 - Turning anomaly findings into automatic infrastructure changes.
 - Creating or modifying AWS Budgets or budget subscribers.
 - Treating executive governance output as an autonomous remediation engine.
+- Treating the container image as proof of a production deployment.
