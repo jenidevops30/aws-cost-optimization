@@ -77,17 +77,60 @@ Cost Anomaly Detection and AWS Budgets collectors consume API pagination explici
 
 `src/finops_exports.py` provides deterministic JSON, CSV, and Markdown exports plus baseline/post-optimization validation. An observed reduction is not treated as proof of causality.
 
-## 8. Dashboard
+## 8. Production Deployment Readiness
 
-Run:
+`src/deployment_readiness.py` provides a local pre-deployment gate:
 
-```bash
-streamlit run dashboard/app.py
+```python
+from src.deployment_readiness import deployment_ready, run_deployment_checks
+from src.runtime_config import RuntimeConfig
+
+config = RuntimeConfig.from_env()
+checks = run_deployment_checks(config)
+assert deployment_ready(config)
 ```
 
-The Streamlit application includes EC2, RDS, EBS, ALB, reporting, anomaly, budget governance, and executive governance views.
+Checks are non-mutating and cover runtime configuration, the configured data directory, and the explicit analysis-only safety model.
 
-## 9. Testing
+Runtime configuration supports:
+
+- `FINOPS_MODE=demo|live`
+- `AWS_REGION` or `AWS_DEFAULT_REGION`
+- `FINOPS_LOG_LEVEL`
+- `FINOPS_AWS_CONNECT_TIMEOUT`
+- `FINOPS_AWS_READ_TIMEOUT`
+- `FINOPS_AWS_MAX_ATTEMPTS`
+- `FINOPS_DATA_DIR`
+
+## 9. Container Deployment
+
+Build and run the dashboard container:
+
+```bash
+docker build -f deployment/Dockerfile -t aws-finops-control-center .
+docker run --rm -p 8501:8501 aws-finops-control-center
+```
+
+The container exposes port `8501` and uses Streamlit's health endpoint for its Docker `HEALTHCHECK`. The build context excludes Git metadata, environment files, private keys, virtual environments, and common secret directories.
+
+For live AWS access, provide credentials through the deployment environment or an attached IAM role rather than embedding them in the image. The application itself does not create or modify AWS resources.
+
+## 10. Production Preflight
+
+Before a production release:
+
+1. Build the image from a clean checkout.
+2. Run the full test suite and compile check.
+3. Run `deployment_ready()` with the intended runtime configuration.
+4. Confirm the IAM identity uses the repository's read-only policy or an organization-approved equivalent.
+5. Confirm AWS region and data directory settings.
+6. Start the container and verify `/_stcore/health` locally.
+7. Open the dashboard and validate Demo/CSV mode first.
+8. Enable live mode only when AWS credentials and read-only permissions are confirmed.
+9. Confirm no credentials, `.env` files, private keys, or confidential evidence are present in the image/build context.
+10. Review logs for structured output and absence of secret-like values.
+
+## 11. Testing
 
 Run:
 
@@ -95,19 +138,19 @@ Run:
 python -m pytest -q
 ```
 
-Executive governance tests cover combined signals, MoM calculation, budget status counts, anomaly impact aggregation, forecast evidence, validation status, missing-data handling, zero-baseline handling, and analysis-only dashboard contracts.
+The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness tests cover valid demo configuration, missing data directories, and the analysis-only live-mode contract.
 
-## 10. Security
+## 12. Security
 
-Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Dashboard errors must not expose raw AWS responses or sensitive service details.
+Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Structured logging redacts common secret-like fields. Dashboard errors must not expose raw AWS responses or sensitive service details.
 
-## 11. Recommendation Lifecycle
+## 13. Recommendation Lifecycle
 
 ```text
 IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VALIDATING → VALIDATED / NOT VALIDATED → REPORTED
 ```
 
-## 12. Current Milestones
+## 14. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -124,3 +167,4 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 13. AWS Cost Anomaly Detection intelligence — complete.
 14. AWS Budget Governance intelligence — complete.
 15. FinOps Executive Governance — complete.
+16. Production Deployment Readiness — in progress.
