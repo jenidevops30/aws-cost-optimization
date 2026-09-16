@@ -67,21 +67,35 @@ The governance snapshot does **not** rank cloud providers, authorize changes, cl
 
 The deployment-readiness layer adds a deterministic pre-deployment gate around the existing runtime configuration and health model. `src/deployment_readiness.py` checks configuration status, configured data-directory availability, and the explicit read-only operating model.
 
-The dashboard is containerized with `deployment/Dockerfile`. The image uses Python 3.12, installs only the dashboard runtime requirements, exposes Streamlit on port `8501`, and includes a container health check against Streamlit's local health endpoint. `deployment/.dockerignore` excludes Git metadata, virtual environments, environment files, private keys, and common secret directories from the build context.
+The dashboard is containerized with `deployment/Dockerfile`. The image uses Python 3.12, installs only the dashboard runtime requirements, exposes Streamlit on port `8501`, and includes a container health check against the operational health endpoint. `deployment/.dockerignore` excludes Git metadata, virtual environments, environment files, private keys, and common secret directories from the build context.
 
 The hardened image runs as an unprivileged `app` user rather than root. The production Compose profile additionally enables a read-only root filesystem, drops all Linux capabilities, enforces `no-new-privileges`, and provides a bounded tmpfs for temporary runtime state. These controls reduce the container's available privileges without changing the application's read-only AWS behavior.
 
 This milestone does not introduce an AWS deployment target or automated infrastructure provisioning. The container is a deployment artifact; runtime AWS access still follows the standard boto3 credential chain. Live mode remains analysis-only.
 
-## 9. AWS Integration Principle
+## 9. Production Observability — Milestone #18
+
+The production observability layer adds a lightweight operational control plane beside Streamlit. `deployment/health_server.py` exposes:
+
+- `GET /health` — liveness-style process response.
+- `GET /readiness` — the existing deterministic runtime readiness report.
+- `GET /metrics` — Prometheus-compatible process-local counters and duration summaries.
+
+`deployment/entrypoint.py` starts the health server and Streamlit as one container workload and forwards termination signals to the dashboard process. The Docker health check now uses `/health`, while the hardened Compose profile keeps the health service internal unless an operator chooses to publish port `8080`.
+
+`src/observability.py` provides thread-safe counters/timers, correlation-ID generation, common AWS/dependency error classification, and sanitization of secret-like fields. The metrics registry is intentionally process-local: restarting a container resets it, so these signals are operational telemetry rather than durable billing evidence.
+
+The new `dashboard/pages/10_Production_Observability.py` gives operators runtime mode/region, readiness state, current process-local counters, and endpoint guidance. No mutation capability is introduced.
+
+## 10. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 10. Confidentiality
+## 11. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 11. Success Criteria
+## 12. Success Criteria
 
 A successful implementation can answer:
 
@@ -103,8 +117,11 @@ A successful implementation can answer:
 16. Can the dashboard run as a non-root container with a health check and a reduced build context?
 17. Can the production Compose profile enforce a read-only filesystem, dropped capabilities, and `no-new-privileges`?
 18. Can CI validate that the production image builds successfully?
+19. Can an operator distinguish liveness from readiness without granting mutation permissions?
+20. Can operational counters and AWS call timing be exposed without treating ephemeral telemetry as billing evidence?
+21. Can common authentication, permission, throttling, dependency, configuration, and application failures be classified safely?
 
-## 12. Non-Goals
+## 13. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
@@ -116,3 +133,4 @@ A successful implementation can answer:
 - Creating or modifying AWS Budgets or budget subscribers.
 - Treating executive governance output as an autonomous remediation engine.
 - Treating the container image as proof of a production deployment.
+- Treating process-local metrics as durable monitoring or billing history.
