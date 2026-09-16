@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Iterable
 
-import boto3
+from .aws_resilience import aws_client, observe
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,7 @@ class CostExplorerRecord:
 
 
 def _client():
-    return boto3.client("ce", region_name="us-east-1")
+    return aws_client("ce", "us-east-1")
 
 
 def _month(value: str) -> str:
@@ -66,12 +66,12 @@ def get_service_costs(start: date, end: date, *, client=None) -> list[CostExplor
     if end <= start:
         raise ValueError("end must be after start")
     ce = client or _client()
-    response = ce.get_cost_and_usage(
+    response = observe(lambda: ce.get_cost_and_usage(
         TimePeriod={"Start": start.isoformat(), "End": end.isoformat()},
         Granularity="MONTHLY",
         Metrics=["UnblendedCost"],
         GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
-    )
+    ))
     return _parse_results(response.get("ResultsByTime", []))
 
 
@@ -80,11 +80,11 @@ def get_ec2_resource_costs(start: date, end: date, *, client=None) -> list[CostE
     if end <= start:
         raise ValueError("end must be after start")
     ce = client or _client()
-    response = ce.get_cost_and_usage_with_resources(
+    response = observe(lambda: ce.get_cost_and_usage_with_resources(
         TimePeriod={"Start": start.isoformat(), "End": end.isoformat()},
         Granularity="DAILY",
         Metrics=["UnblendedCost"],
         Filter={"Dimensions": {"Key": "SERVICE", "Values": ["Amazon Elastic Compute Cloud - Compute"]}},
         GroupBy=[{"Type": "DIMENSION", "Key": "RESOURCE_ID"}],
-    )
+    ))
     return _parse_resource_results(response.get("ResultsByTime", []))

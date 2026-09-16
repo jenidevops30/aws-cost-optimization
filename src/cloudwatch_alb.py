@@ -3,24 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from .aws_resilience import aws_client, observe
 
 SUM_METRICS = {"RequestCount", "ProcessedBytes", "NewConnectionCount"}
 
 
 def _query(arn_suffix: str, metric_name: str, period: int, stat: str, query_id: str) -> dict[str, Any]:
-    return {
-        "Id": query_id,
-        "MetricStat": {
-            "Metric": {
-                "Namespace": "AWS/ApplicationELB",
-                "MetricName": metric_name,
-                "Dimensions": [{"Name": "LoadBalancer", "Value": arn_suffix}],
-            },
-            "Period": period,
-            "Stat": stat,
-        },
-        "ReturnData": True,
-    }
+    return {"Id": query_id, "MetricStat": {"Metric": {"Namespace": "AWS/ApplicationELB", "MetricName": metric_name, "Dimensions": [{"Name": "LoadBalancer", "Value": arn_suffix}]}, "Period": period, "Stat": stat}, "ReturnData": True}
 
 
 def _collect_metric_results(client, queries: list[dict[str, Any]], start: datetime, end: datetime) -> dict[str, list[float]]:
@@ -28,15 +17,10 @@ def _collect_metric_results(client, queries: list[dict[str, Any]], start: dateti
     collected: dict[str, list[float]] = {query["Id"]: [] for query in queries}
     next_token = None
     while True:
-        request = {
-            "MetricDataQueries": queries,
-            "StartTime": start.astimezone(timezone.utc),
-            "EndTime": end.astimezone(timezone.utc),
-            "ScanBy": "TimestampDescending",
-        }
+        request = {"MetricDataQueries": queries, "StartTime": start.astimezone(timezone.utc), "EndTime": end.astimezone(timezone.utc), "ScanBy": "TimestampDescending"}
         if next_token:
             request["NextToken"] = next_token
-        response = client.get_metric_data(**request)
+        response = observe(lambda: client.get_metric_data(**request))
         for item in response.get("MetricDataResults", []):
             metric_id = item.get("Id")
             if metric_id in collected:
@@ -55,11 +39,7 @@ def _aggregate(values: list[float], metric_name: str) -> float | None:
 
 
 def get_alb_metrics(load_balancers: list[dict[str, Any]], start: datetime, end: datetime, *, region: str, period: int = 300, client=None) -> list[dict[str, Any]]:
-    """Read ALB metrics with CloudWatch GetMetricData only.
-
-    Sum metrics are aggregated across returned periods; Average metrics use the
-    arithmetic mean of returned datapoints. Missing metrics remain unavailable.
-    """
+    """Read ALB metrics with CloudWatch GetMetricData only."""
     if end <= start:
         raise ValueError("end must be after start")
     if period < 60 or period % 60:
@@ -67,14 +47,10 @@ def get_alb_metrics(load_balancers: list[dict[str, Any]], start: datetime, end: 
     if not load_balancers:
         return []
     if client is None:
-        import boto3
-        client = boto3.client("cloudwatch", region_name=region)
-
+        client = aws_client("cloudwatch", region)
     metrics = [
-        ("RequestCount", "Sum", "request_count"),
-        ("ProcessedBytes", "Sum", "processed_bytes"),
-        ("ActiveConnectionCount", "Average", "active_connections"),
-        ("NewConnectionCount", "Sum", "new_connections"),
+        ("RequestCount", "Sum", "request_count"), ("ProcessedBytes", "Sum", "processed_bytes"),
+        ("ActiveConnectionCount", "Average", "active_connections"), ("NewConnectionCount", "Sum", "new_connections"),
         ("TargetResponseTime", "Average", "target_response_time"),
     ]
     output: list[dict[str, Any]] = []

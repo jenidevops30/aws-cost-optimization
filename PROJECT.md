@@ -44,7 +44,7 @@ The repository contains historical monthly billing data from December 2025 throu
 - EBS volume inventory correlation.
 - ALB inventory correlation.
 - CloudWatch utilization, I/O, traffic, and performance evidence.
-- Explicit handling of unavailable metrics.
+- Explicit handling of unavailable metrics and failed API observations.
 
 ### EC2 intelligence
 
@@ -116,6 +116,19 @@ Regression coverage verifies:
 
 The dashboard field names now distinguish totals (`request_count_total`, `processed_bytes_total`, `new_connections_total`) from averages (`active_connections_average`, `target_response_time_average`).
 
+### AWS API reliability
+
+The AWS API reliability milestone introduces a shared boundary around live AWS observations:
+
+- Standard Boto3 retry mode is configured with a bounded maximum of five attempts.
+- Network connect/read timeouts are bounded.
+- Final AWS failures are classified into stable application categories rather than exposing raw service responses.
+- Throttling, permissions, validation, not-found, service, and transport failures are distinguishable.
+- Missing CloudWatch datapoints remain an evidence-availability state and are not confused with failed API calls.
+- The reliability layer remains observation-only and does not add mutation operations.
+
+This separation gives the dashboard enough information to explain whether evidence is missing, unavailable because a resource is absent, or unavailable because the AWS request failed.
+
 ### Optimization
 
 - EC2 right-sizing review
@@ -136,7 +149,7 @@ The dashboard field names now distinguish totals (`request_count_total`, `proces
 
 ## 7. AWS Integration Principle
 
-The live AWS collector uses read-only observation APIs. The platform is a decision-support system, not an autonomous infrastructure modification system.
+The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is a decision-support system, not an autonomous infrastructure modification system.
 
 ## 8. Confidentiality
 
@@ -155,6 +168,7 @@ A successful implementation can answer:
 7. What optimization opportunities are supported by evidence?
 8. Did an implemented optimization produce an observed cost change?
 9. Can the evidence be exported into a repeatable report?
+10. If live AWS evidence fails, can the system distinguish missing data from a classified API failure without exposing raw AWS details?
 
 ## 10. Non-Goals
 
@@ -163,3 +177,4 @@ A successful implementation can answer:
 - Publishing confidential production configuration.
 - Claiming savings attribution without evidence.
 - Treating missing utilization data as zero.
+- Retrying validation or permission failures through custom application loops.
