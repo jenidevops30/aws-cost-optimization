@@ -2,7 +2,7 @@
 
 ## 1. Objective
 
-Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, infrastructure/utilization evidence, optimization review signals, and savings validation.
+Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, infrastructure/utilization evidence, optimization review signals, savings validation, and auditable reports.
 
 ## 2. Problem
 
@@ -11,7 +11,7 @@ AWS bills can show that spending changed without immediately explaining which se
 ## 3. Core Workflow
 
 ```text
-Collect → Normalize → Analyze → Detect → Investigate → Correlate → Recommend → Validate → Report
+Collect → Normalize → Analyze → Detect → Investigate → Correlate → Recommend → Validate → Report → Export
 ```
 
 ## 4. Evidence Model
@@ -88,6 +88,20 @@ Review signals include low request activity, high processed bytes, high target r
 
 Elastic Load Balancing Cost Explorer spend remains service-level in this implementation; aggregate ELB spend is not divided across individual load balancers without resource-level billing evidence.
 
+### FinOps reporting and validation
+
+The reporting layer packages the existing analysis into repeatable outputs:
+
+- Executive cost summary.
+- Monthly spend and service totals.
+- Anomaly findings.
+- JSON, CSV, and Markdown exports.
+- Baseline versus post-optimization comparison.
+- Observed cost delta and percentage change.
+- Explicit validation status and limitations.
+
+Validation is intentionally descriptive. A lower post-optimization period is recorded as an observed reduction, but the platform does not claim that a specific optimization caused the reduction without independent supporting evidence.
+
 ### Optimization
 
 - EC2 right-sizing review
@@ -104,6 +118,7 @@ Elastic Load Balancing Cost Explorer spend remains service-level in this impleme
 - Observed cost difference
 - Attribution confidence
 - Optimization lifecycle tracking
+- Exportable evidence for review
 
 ## 7. AWS Integration Principle
 
@@ -125,6 +140,7 @@ A successful implementation can answer:
 6. Which findings require investigation?
 7. What optimization opportunities are supported by evidence?
 8. Did an implemented optimization produce an observed cost change?
+9. Can the evidence be exported into a repeatable report?
 
 ## 10. Non-Goals
 
