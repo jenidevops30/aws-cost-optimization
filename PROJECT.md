@@ -6,7 +6,7 @@ Create an evidence-driven FinOps platform that turns AWS billing data into cost 
 
 ## 2. Problem
 
-AWS bills can show that spending changed without immediately explaining which services or resources require investigation. Budget limits add a governance boundary, but budget status should be evaluated using the AWS-reported limit, actual spend, and forecast evidence rather than treated as an automatic remediation trigger.
+AWS bills can show that spending changed without immediately explaining which services or resources require investigation. Governance needs to combine spend, budgets, anomalies, forecast evidence, operational findings, and validation without turning incomplete evidence into unsupported conclusions.
 
 ## 3. Core Workflow
 
@@ -16,108 +16,62 @@ Collect → Normalize → Analyze → Detect → Investigate → Correlate → G
 
 ## 4. Evidence Model
 
-Every finding should identify its evidence source and confidence:
-
 - `VERIFIED` — directly supported by available billing or AWS evidence.
 - `PARTIALLY VERIFIED` — supported by some evidence but missing a required confirmation.
-- `INFERENCE — NOT DIRECTLY VERIFIED` — a plausible explanation that must not be presented as a confirmed fact.
+- `INFERENCE — NOT DIRECTLY VERIFIED` — plausible explanation that must not be presented as confirmed fact.
 
 ## 5. Historical Case Study
 
-The repository contains historical monthly billing data from December 2025 through August 2026. These figures are treated as observed billing inputs. The platform must not infer causality from a cost change without supporting infrastructure or operational evidence.
+The repository contains historical monthly billing data from December 2025 through August 2026. These figures are observed billing inputs. The platform must not infer causality from a cost change without supporting infrastructure or operational evidence.
 
 ## 6. Platform Capabilities
 
-### Billing analytics
+### Billing, anomaly, and budget intelligence
 
-- Monthly spend
-- Month-over-month change
-- Service-level spend
-- Cost contribution
-- Trend analysis
-
-### AWS Cost Anomaly Detection
-
-The platform reads AWS Cost Anomaly Detection findings through the Cost Explorer API. Each finding can include an anomaly identifier, time window, AWS-reported estimated impact, actual spend, monitor ARN, and available root-cause dimensions.
-
-The collector handles `NextPageToken` pagination and passes AWS failures through the shared resilience layer. Root causes are preserved as evidence rather than converted into automatic recommendations. Anomaly impact is reported as AWS-returned evidence, not as a self-calculated savings estimate.
-
-### AWS Budget Governance
-
-The budget module reads AWS Budgets through `DescribeBudgets` and normalizes the budget limit, actual spend, forecast spend, time unit, and period. It consumes `NextToken` pagination and produces deterministic governance statuses:
-
-- `within-limit` when the selected reference spend is below 80% of the budget limit.
-- `near-limit` when the selected reference spend is at least 80% but below the limit.
-- `over-budget` when the selected reference spend reaches or exceeds the limit.
-- `insufficient-evidence` when a usable limit or spend reference is unavailable.
-
-AWS forecast spend is preferred over actual spend when available because the governance signal is intended to identify budgets approaching their configured limit. This is a threshold-based review signal, not a forecast guarantee. No budget mutation or notification-subscription API is used.
+- Monthly spend and month-over-month change.
+- Service-level spend and cost contribution.
+- AWS Cost Anomaly Detection findings with AWS-reported impact and root causes.
+- AWS Budgets limits, actual spend, forecast spend, periods, and threshold statuses.
 
 ### Infrastructure investigation
 
 - EC2 resource-level cost attribution when resource IDs are available.
-- EC2 inventory correlation.
-- RDS inventory correlation.
-- EBS volume inventory correlation.
-- ALB inventory correlation.
+- EC2, RDS, EBS, and ALB inventory correlation.
 - CloudWatch utilization, I/O, traffic, and performance evidence.
 - Explicit handling of unavailable metrics and failed API observations.
 
-### EC2 intelligence
+### Optimization and validation
 
-- CPU average/max evidence.
-- Network in/out evidence.
-- ARM64 review signal.
-- Stopped-resource review signal.
-- High-cost concentration signal.
+- EC2, RDS, EBS, ALB, data-transfer, and idle-resource review signals.
+- Baseline/post-change measurement and observed cost difference.
+- Exportable evidence for review.
 
-### RDS intelligence
+## 7. FinOps Executive Governance — Milestone #15
 
-RDS inventory is correlated with CloudWatch evidence for CPU, connections, free storage, ReadIOPS and WriteIOPS. Review signals are investigation candidates, not automatic resizing decisions.
+The executive governance layer aggregates existing normalized evidence instead of introducing duplicate AWS collection paths. `src/finops_governance.py` produces a deterministic `GovernanceSnapshot` containing:
 
-### EBS intelligence
+- Latest and previous analyzed cost.
+- Month-over-month percentage change when a valid previous period exists.
+- Forecast amount and confidence when supplied.
+- Budget count, over-budget count, and near-limit count.
+- Anomaly count and AWS-reported estimated impact when supplied.
+- Review-finding count.
+- Validation status.
+- Evidence state: `insufficient-evidence`, `cost-only`, or `multi-signal`.
 
-EBS inventory is correlated with CloudWatch read/write operations, bytes, queue length, and idle time. Review signals include unattached volumes, low activity, high queue length, and `gp2` migration review.
+The Streamlit page `dashboard/pages/9_FinOps_Executive_Governance.py` surfaces this snapshot as an executive review view. It explicitly distinguishes missing evidence from zero and warns that the output is analysis-only.
 
-### ALB & data transfer intelligence
+The governance snapshot does **not** rank cloud providers, authorize changes, claim that an anomaly caused a cost increase, fabricate savings, or treat a forecast as a guarantee.
 
-ALB inventory is correlated with CloudWatch `RequestCount`, `ProcessedBytes`, `ActiveConnectionCount`, `NewConnectionCount`, and `TargetResponseTime`. Sum metrics are aggregated as totals; Average metrics remain arithmetic means. Review signals are investigation candidates only.
+## 8. AWS Integration Principle
 
-### FinOps reporting and validation
+The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-The reporting layer packages analysis into executive summaries, monthly/service totals, anomaly findings, JSON/CSV/Markdown exports, and baseline/post-optimization comparisons. A lower post-optimization period is an observed reduction, not proof of causality.
-
-### Production hardening and AWS API reliability
-
-The platform uses correct ALB metric aggregation and consumes CloudWatch pagination. Live AWS observations use bounded standard SDK retries, connection/read timeouts, stable failure categories, and safe dashboard messages. Missing evidence remains distinct from API failure.
-
-### Optimization
-
-- EC2 right-sizing review
-- Graviton opportunity review
-- RDS capacity review
-- EBS capacity/type review
-- ALB and data-transfer investigation
-- Idle-resource investigation
-
-### Validation
-
-- Baseline capture
-- Post-change measurement
-- Observed cost difference
-- Attribution confidence
-- Optimization lifecycle tracking
-- Exportable evidence for review
-
-## 7. AWS Integration Principle
-
-The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is a decision-support system, not an autonomous infrastructure modification system.
-
-## 8. Confidentiality
+## 9. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 9. Success Criteria
+## 10. Success Criteria
 
 A successful implementation can answer:
 
@@ -131,10 +85,11 @@ A successful implementation can answer:
 8. Did an implemented optimization produce an observed cost change?
 9. Can the evidence be exported into a repeatable report?
 10. Can the system distinguish missing evidence from classified AWS API failure?
-11. Can AWS Cost Anomaly Detection findings be retrieved and paginated without introducing mutation capability?
-12. Can AWS budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
+11. Can anomaly findings be retrieved and paginated without mutation capability?
+12. Can budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
+13. Can executive governance combine these signals without inventing missing evidence?
 
-## 10. Non-Goals
+## 11. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
@@ -144,3 +99,4 @@ A successful implementation can answer:
 - Retrying validation or permission failures through custom application loops.
 - Turning anomaly findings into automatic infrastructure changes.
 - Creating or modifying AWS Budgets or budget subscribers.
+- Treating executive governance output as an autonomous remediation engine.
