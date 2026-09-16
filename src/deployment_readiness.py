@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.runtime_config import RuntimeConfig
-from src.runtime_health import HealthCheck
+from src.runtime_health import readiness_report
 
 
 @dataclass(frozen=True)
@@ -17,10 +17,11 @@ class DeploymentCheck:
 def run_deployment_checks(config: RuntimeConfig) -> list[DeploymentCheck]:
     """Run local, non-mutating checks before deploying the dashboard."""
     checks: list[DeploymentCheck] = []
-    health = HealthCheck(config)
+    health = readiness_report(config)
 
-    for item in health.readiness_report():
-        checks.append(DeploymentCheck(item.name, item.status, item.detail))
+    for item in health["checks"]:
+        status = "ready" if item["status"] == "ok" else "not-ready"
+        checks.append(DeploymentCheck(item["name"], status, item["detail"]))
 
     data_dir = Path(config.data_dir)
     if data_dir.exists() and data_dir.is_dir():
