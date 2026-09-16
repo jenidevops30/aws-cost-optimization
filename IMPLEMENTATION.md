@@ -15,7 +15,7 @@ Cost Analytics
         ↓
 Inventory Correlation
         ↓
-CloudWatch Utilization Evidence
+CloudWatch Utilization / I/O Evidence
         ↓
 Review Signals
         ↓
@@ -30,7 +30,7 @@ Report / Validation
 
 - Service-level monthly cost through `GetCostAndUsage`.
 - EC2 resource-level cost through `GetCostAndUsageWithResources` when AWS returns resource IDs.
-- RDS is intentionally kept at service-level cost in the current milestone; the implementation does not manufacture per-database allocation.
+- RDS and EBS are intentionally kept at service-level cost in the current implementation; it does not manufacture per-resource allocation.
 
 ### EC2
 
@@ -38,38 +38,46 @@ Report / Validation
 
 ### RDS
 
-`DescribeDBInstances` supplies:
+`DescribeDBInstances` supplies DB identifier, instance class, engine, status, Multi-AZ state, and allocated storage. CloudWatch `GetMetricData` supplies CPU, connections, free storage, ReadIOPS and WriteIOPS.
 
-- DB identifier
-- instance class
-- engine
-- status
-- Multi-AZ state
-- allocated storage
+### EBS
+
+`DescribeVolumes` supplies:
+
+- Volume ID
+- volume type
+- size
+- state
+- Availability Zone
+- encryption state
+- configured IOPS/throughput when returned
+- attached EC2 instance IDs
 
 CloudWatch `GetMetricData` supplies:
 
-- `CPUUtilization`
-- `DatabaseConnections`
-- `FreeStorageSpace`
-- `ReadIOPS`
-- `WriteIOPS`
+- `VolumeReadOps`
+- `VolumeWriteOps`
+- `VolumeReadBytes`
+- `VolumeWriteBytes`
+- `VolumeQueueLength`
+- `VolumeIdleTime`
 
-## 4. RDS Review Rules
+The implementation presents these as raw/aggregated operational evidence. It does not turn them into fabricated utilization percentages or pricing estimates.
 
-Default review thresholds are explicit and configurable:
+## 4. EBS Review Rules
 
-- Average CPU below 10% → `low-average-cpu-review`.
-- Average CPU at/above 80% → `high-average-cpu`.
-- Peak CPU at/above 80% → `high-peak-cpu`.
-- Average free storage below 20 GiB → `low-free-storage-review`.
-- Average free storage below 20% of allocated storage → `low-free-storage-percent-review`.
+Default review signals are explicit and configurable:
 
-These thresholds create review signals only. They do not estimate savings, recommend a specific DB class, or modify RDS.
+- Available volume with no attachment → `unattached-volume-review`.
+- `gp2` volume → `gp2-migration-review`.
+- Average read + write operations below 1 operation per metric period → `low-activity-review`.
+- Average queue length at/above 1 → `high-queue-review`.
+
+These are investigation signals only. A human must verify workload ownership, lifecycle requirements, snapshots/backups, performance requirements, and current AWS pricing before making a change.
 
 ## 5. Missing Data Semantics
 
-A missing CloudWatch metric is represented as unavailable. It is never converted to zero because zero and missing are materially different operational states.
+Missing CloudWatch metrics are represented as unavailable. They are never converted to zero because zero and missing are materially different operational states.
 
 ## 6. Dashboard
 
@@ -79,7 +87,7 @@ Run:
 streamlit run dashboard/app.py
 ```
 
-The dashboard provides separate EC2 and RDS intelligence pages. The RDS page shows aggregate Cost Explorer spend alongside DB inventory and utilization evidence, without pretending that service-level spend is per-instance spend.
+The dashboard provides separate EC2, RDS, and EBS intelligence pages. The EBS page shows aggregate Cost Explorer spend alongside volume inventory and CloudWatch I/O evidence, without pretending that service-level spend is per-volume spend.
 
 ## 7. Testing
 
@@ -93,7 +101,7 @@ Tests cover metric query construction, aggregation, review signals, missing-data
 
 ## 8. Security
 
-Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS mutation actions.
+Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS/EBS mutation actions.
 
 ## 9. Recommendation Lifecycle
 
@@ -121,7 +129,7 @@ VALIDATED / NOT VALIDATED
 4. Anomaly detection — complete.
 5. EC2 resource-level investigation — complete.
 6. EC2 CloudWatch utilization intelligence — complete.
-7. RDS CloudWatch cost/utilization intelligence — current milestone.
-8. EBS capacity and I/O intelligence.
+7. RDS CloudWatch cost/utilization intelligence — complete.
+8. EBS capacity and I/O intelligence — current milestone.
 9. ALB and data-transfer investigation.
 10. FinOps reports, exports, and validation workflows.
