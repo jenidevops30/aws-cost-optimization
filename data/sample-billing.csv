@@ -1,0 +1,7 @@
+billing_period,service,usage_type,region,cost,currency,source
+2026-01,EC2,EC2 Instances,us-east-1,120.00,USD,sample
+2026-01,RDS,Database Instance,us-east-1,80.00,USD,sample
+2026-01,ELB,Application Load Balancer,us-east-1,40.00,USD,sample
+2026-02,EC2,EC2 Instances,us-east-1,95.00,USD,sample
+2026-02,RDS,Database Instance,us-east-1,78.00,USD,sample
+2026-02,ELB,Application Load Balancer,us-east-1,38.00,USD,sample
