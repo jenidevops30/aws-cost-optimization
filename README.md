@@ -13,6 +13,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - RDS inventory and CloudWatch CPU, connections, storage, and IOPS intelligence.
 - EBS inventory and CloudWatch I/O evidence for volume-level investigation.
 - ALB inventory and CloudWatch traffic/data-transfer evidence.
+- AWS Cost Anomaly Detection findings with root-cause evidence.
 - Cost/utilization correlation with explicit missing-data handling.
 - Anomaly detection and evidence-aware review signals.
 - FinOps executive reporting and baseline-vs-post-optimization validation.
@@ -27,7 +28,8 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 AWS Cost Explorer ───────┐
 Historical CSV ──────────┤
 EC2 / RDS / EBS / ALB ───┤
-CloudWatch Metrics ──────┘
+CloudWatch Metrics ──────┤
+Cost Anomaly Detection ──┘
             │
        Data Collection
             │
@@ -43,6 +45,12 @@ CloudWatch Metrics ──────┘
             │
    Validate → Export Report
 ```
+
+## Cost Anomaly Detection
+
+The platform can read AWS Cost Anomaly Detection findings through the Cost Explorer API. Findings include AWS-reported anomaly identifiers, time windows, estimated impact, actual spend, and available root-cause dimensions such as service, region, and usage type.
+
+The collector consumes API pagination and uses the shared AWS reliability layer. Anomaly impact is presented as AWS-reported evidence, not as a fabricated savings estimate. A finding is an investigation signal; it does not by itself establish causality or authorize an infrastructure change.
 
 ## FinOps Reporting & Validation
 
@@ -61,48 +69,15 @@ A lower post-optimization cost is reported as an **observed reduction**, not as 
 
 ## ALB & Data Transfer Intelligence
 
-The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch `GetMetricData` evidence for:
+The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch `GetMetricData` evidence for `RequestCount`, `ProcessedBytes`, `ActiveConnectionCount`, `NewConnectionCount`, and `TargetResponseTime`. Sum metrics are aggregated as totals, Average metrics as arithmetic means, and CloudWatch pagination is consumed until complete.
 
-- `RequestCount`
-- `ProcessedBytes`
-- `ActiveConnectionCount`
-- `NewConnectionCount`
-- `TargetResponseTime`
+## Production Hardening & Reliability
 
-Sum metrics are aggregated across the selected CloudWatch window, while Average metrics use the arithmetic mean of returned datapoints. CloudWatch pagination is consumed until all result pages are collected. The dashboard exposes the resulting totals/averages with explicit metric semantics.
-
-The dashboard keeps Elastic Load Balancing Cost Explorer spend at service level. It does **not** divide aggregate ELB cost across individual load balancers without resource-level billing evidence.
-
-Review signals include low request activity, high processed bytes, high target response time, and non-active load balancers. These are evidence-based investigation candidates, not automatic modification decisions. The platform does not fabricate data-transfer prices or savings.
-
-## Production Hardening
-
-The production-hardening milestone strengthens the ALB evidence path by:
-
-- Distinguishing CloudWatch `Sum` metrics from `Average` metrics.
-- Aggregating `RequestCount`, `ProcessedBytes`, and `NewConnectionCount` as totals rather than misleading averages.
-- Preserving `ActiveConnectionCount` and `TargetResponseTime` as averages.
-- Handling `GetMetricData` `NextToken` pagination.
-- Adding regression tests for aggregation and pagination.
-- Keeping missing metrics unavailable rather than treating them as zero.
-- Keeping all AWS integration analysis-only with no resource mutation APIs.
-
-## AWS API Reliability
-
-The AWS API reliability milestone adds a shared resilience layer for live observation paths:
-
-- Boto3 clients use standard retry mode with a bounded maximum of five attempts.
-- Connection and read timeouts are bounded to avoid indefinitely hanging dashboard requests.
-- Final AWS failures are classified into stable states such as throttling, access denied, not found, validation, service, and transport errors.
-- Dashboard-facing error messages omit raw AWS responses and potentially sensitive request details.
-- Missing/empty CloudWatch data remains distinct from an AWS API failure.
-- Retries are handled by the SDK for transient failures; validation and permission failures are not blindly retried by application code.
-
-This layer changes reliability behavior only; it does not introduce any AWS mutation capability.
+The production-hardening work separates metric semantics and consumes CloudWatch pagination. The AWS API reliability layer configures bounded standard SDK retries, connection/read timeouts, stable failure classification, and dashboard-safe error messages. Missing evidence remains distinct from failed AWS calls.
 
 ## Safety Model
 
-The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. Missing CloudWatch data is represented as unavailable rather than zero, while failed AWS API calls are represented as explicit classified errors.
+The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. No application-level unbounded retry loop or automatic optimization action is introduced.
 
 ## Repository Structure
 
@@ -116,15 +91,11 @@ aws-cost-optimization/
 │   ├── aws_cost_explorer.py
 │   ├── aws_readonly.py
 │   ├── aws_resilience.py
+│   ├── cost_anomaly.py
 │   ├── cloudwatch_ec2.py
 │   ├── cloudwatch_rds.py
 │   ├── cloudwatch_ebs.py
 │   ├── cloudwatch_alb.py
-│   ├── ec2_intelligence.py
-│   ├── ec2_utilization_intelligence.py
-│   ├── rds_intelligence.py
-│   ├── ebs_intelligence.py
-│   ├── alb_intelligence.py
 │   └── finops_exports.py
 ├── dashboard/
 │   └── pages/
@@ -132,7 +103,8 @@ aws-cost-optimization/
 │       ├── 3_RDS_Cost_Intelligence.py
 │       ├── 4_EBS_Cost_Intelligence.py
 │       ├── 5_ALB_Data_Transfer_Intelligence.py
-│       └── 6_FinOps_Reports_Validation.py
+│       ├── 6_FinOps_Reports_Validation.py
+│       └── 7_Cost_Anomaly_Detection.py
 ├── tests/
 └── data/
     └── sample-billing.csv
@@ -145,8 +117,6 @@ python cli.py data/sample-billing.csv
 python -m pytest -q
 streamlit run dashboard/app.py
 ```
-
-For the reporting workflow, open the Streamlit multipage dashboard and select **FinOps Reports & Validation**.
 
 ## Three Documentation Files
 
