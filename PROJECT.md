@@ -41,7 +41,8 @@ The repository contains historical monthly billing data from December 2025 throu
 - EC2 resource-level cost attribution when resource IDs are available.
 - EC2 inventory correlation.
 - RDS inventory correlation.
-- CloudWatch utilization evidence.
+- EBS volume inventory correlation.
+- CloudWatch utilization and I/O evidence.
 - Explicit handling of unavailable metrics.
 
 ### EC2 intelligence
@@ -66,11 +67,34 @@ Review signals include low/high CPU and low free-storage conditions. These are i
 
 RDS Cost Explorer spend remains service-level in the current implementation. Aggregate RDS cost is not divided across DB instances without resource-level billing evidence.
 
+### EBS intelligence
+
+EBS volume inventory is collected through EC2 `DescribeVolumes` and correlated with CloudWatch evidence for:
+
+- `VolumeReadOps`
+- `VolumeWriteOps`
+- `VolumeReadBytes`
+- `VolumeWriteBytes`
+- `VolumeQueueLength`
+- `VolumeIdleTime`
+
+Review signals include:
+
+- Unattached-volume review.
+- Low-activity review.
+- High queue-length review.
+- `gp2` migration review.
+
+These signals are operational review candidates. They do not claim a volume is safe to delete, do not fabricate utilization percentages, and do not estimate savings without verified pricing and lifecycle evidence.
+
+EBS Cost Explorer spend remains service-level in this implementation; aggregate EBS spend is not divided across volumes without resource-level billing evidence.
+
 ### Optimization
 
 - EC2 right-sizing review
 - Graviton opportunity review
 - RDS capacity review
+- EBS capacity/type review
 - Network/data-transfer investigation
 - Idle-resource investigation
 
@@ -98,7 +122,7 @@ A successful implementation can answer:
 2. How did spend change over time?
 3. Which services drove the change?
 4. Which resources have verified cost attribution?
-5. What utilization evidence is available?
+5. What utilization and I/O evidence is available?
 6. Which findings require investigation?
 7. What optimization opportunities are supported by evidence?
 8. Did an implemented optimization produce an observed cost change?
