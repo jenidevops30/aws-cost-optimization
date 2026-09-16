@@ -2,16 +2,16 @@
 
 ## 1. Objective
 
-Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, optimization recommendations, and savings validation.
+Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, infrastructure/utilization evidence, optimization review signals, and savings validation.
 
 ## 2. Problem
 
-AWS bills can show that spending changed without immediately explaining which services or resources require investigation. The platform provides a repeatable workflow for moving from spend data to evidence-backed engineering decisions.
+AWS bills can show that spending changed without immediately explaining which services or resources require investigation. The platform provides a repeatable workflow from spend data to evidence-backed engineering decisions.
 
 ## 3. Core Workflow
 
 ```text
-Collect → Normalize → Analyze → Detect → Investigate → Recommend → Validate → Report
+Collect → Normalize → Analyze → Detect → Investigate → Correlate → Recommend → Validate → Report
 ```
 
 ## 4. Evidence Model
@@ -36,12 +36,35 @@ The repository contains historical monthly billing data from December 2025 throu
 - Cost contribution
 - Trend analysis
 
-### Investigation
+### Infrastructure investigation
 
-- Cost-driver identification
-- Resource metadata correlation
-- Utilization evidence
-- Anomaly detection
+- EC2 resource-level cost attribution when resource IDs are available.
+- EC2 inventory correlation.
+- RDS inventory correlation.
+- CloudWatch utilization evidence.
+- Explicit handling of unavailable metrics.
+
+### EC2 intelligence
+
+- CPU average/max evidence.
+- Network in/out evidence.
+- ARM64 review signal.
+- Stopped-resource review signal.
+- High-cost concentration signal.
+
+### RDS intelligence
+
+RDS inventory is correlated with CloudWatch evidence for:
+
+- `CPUUtilization`
+- `DatabaseConnections`
+- `FreeStorageSpace`
+- `ReadIOPS`
+- `WriteIOPS`
+
+Review signals include low/high CPU and low free-storage conditions. These are investigation candidates, not automatic resizing decisions.
+
+RDS Cost Explorer spend remains service-level in the current implementation. Aggregate RDS cost is not divided across DB instances without resource-level billing evidence.
 
 ### Optimization
 
@@ -61,7 +84,7 @@ The repository contains historical monthly billing data from December 2025 throu
 
 ## 7. AWS Integration Principle
 
-The future live AWS collector will use read-only permissions. The platform is a decision-support system, not an autonomous infrastructure modification system.
+The live AWS collector uses read-only observation APIs. The platform is a decision-support system, not an autonomous infrastructure modification system.
 
 ## 8. Confidentiality
 
@@ -74,13 +97,16 @@ A successful implementation can answer:
 1. How much did AWS spend?
 2. How did spend change over time?
 3. Which services drove the change?
-4. Which findings require investigation?
-5. What optimization opportunities are supported by evidence?
-6. Did an implemented optimization produce an observed cost change?
+4. Which resources have verified cost attribution?
+5. What utilization evidence is available?
+6. Which findings require investigation?
+7. What optimization opportunities are supported by evidence?
+8. Did an implemented optimization produce an observed cost change?
 
 ## 10. Non-Goals
 
-- Automatic resource termination or resizing.
+- Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
 - Publishing confidential production configuration.
 - Claiming savings attribution without evidence.
+- Treating missing utilization data as zero.
