@@ -12,6 +12,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - EC2 inventory and CloudWatch CPU/network utilization intelligence.
 - RDS inventory and CloudWatch CPU, connections, storage, and IOPS intelligence.
 - EBS inventory and CloudWatch I/O evidence for volume-level investigation.
+- ALB inventory and CloudWatch traffic/data-transfer evidence.
 - Cost/utilization correlation with explicit missing-data handling.
 - Anomaly detection and evidence-aware review signals.
 - Read-only AWS guardrails and automated tests.
@@ -22,7 +23,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 ```text
 AWS Cost Explorer ───────┐
 Historical CSV ──────────┤
-EC2 / RDS / EBS Inventory ┤
+EC2 / RDS / EBS / ALB ───┤
 CloudWatch Metrics ──────┘
             │
        Data Collection
@@ -40,20 +41,19 @@ CloudWatch Metrics ──────┘
           Report
 ```
 
-## EBS Intelligence
+## ALB & Data Transfer Intelligence
 
-The EBS module combines `DescribeVolumes` inventory with CloudWatch `GetMetricData` evidence for:
+The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch `GetMetricData` evidence for:
 
-- `VolumeReadOps`
-- `VolumeWriteOps`
-- `VolumeReadBytes`
-- `VolumeWriteBytes`
-- `VolumeQueueLength`
-- `VolumeIdleTime`
+- `RequestCount`
+- `ProcessedBytes`
+- `ActiveConnectionCount`
+- `NewConnectionCount`
+- `TargetResponseTime`
 
-The dashboard keeps EBS Cost Explorer spend at service level. It does **not** divide aggregate EBS cost across volumes without resource-level billing evidence.
+The dashboard keeps Elastic Load Balancing Cost Explorer spend at service level. It does **not** divide aggregate ELB cost across individual load balancers without resource-level billing evidence.
 
-Review signals include unattached-volume review, low-activity review, queue-length review, and a `gp2` migration review. Signals are evidence-based investigation candidates; the platform does not calculate savings without verified pricing inputs and does not modify volumes.
+Review signals include low request activity, high processed bytes, high target response time, and non-active load balancers. These are evidence-based investigation candidates, not automatic modification decisions. The platform does not fabricate data-transfer prices or savings.
 
 ## Safety Model
 
@@ -73,15 +73,18 @@ aws-cost-optimization/
 │   ├── cloudwatch_ec2.py
 │   ├── cloudwatch_rds.py
 │   ├── cloudwatch_ebs.py
+│   ├── cloudwatch_alb.py
 │   ├── ec2_intelligence.py
 │   ├── ec2_utilization_intelligence.py
 │   ├── rds_intelligence.py
-│   └── ebs_intelligence.py
+│   ├── ebs_intelligence.py
+│   └── alb_intelligence.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
 │       ├── 3_RDS_Cost_Intelligence.py
-│       └── 4_EBS_Cost_Intelligence.py
+│       ├── 4_EBS_Cost_Intelligence.py
+│       └── 5_ALB_Data_Transfer_Intelligence.py
 ├── tests/
 └── data/
     └── sample-billing.csv
