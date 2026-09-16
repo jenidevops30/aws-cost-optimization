@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from .aws_resilience import aws_client, observe
+
 
 def _query(instance_id: str, metric_name: str, period: int, stat: str, query_id: str) -> dict[str, Any]:
     return {"Id": query_id, "MetricStat": {"Metric": {"Namespace": "AWS/EC2", "MetricName": metric_name, "Dimensions": [{"Name": "InstanceId", "Value": instance_id}]}, "Period": period, "Stat": stat}, "ReturnData": True}
@@ -17,11 +19,10 @@ def get_ec2_utilization(instance_ids: list[str], start: datetime, end: datetime,
     if not instance_ids:
         return []
     if client is None:
-        import boto3
-        client = boto3.client("cloudwatch", region_name=region)
+        client = aws_client("cloudwatch", region)
     results: list[dict[str, Any]] = []
     for instance_id in instance_ids:
-        response = client.get_metric_data(
+        response = observe(lambda: client.get_metric_data(
             MetricDataQueries=[
                 _query(instance_id, "CPUUtilization", period, "Average", "cpuavg"),
                 _query(instance_id, "CPUUtilization", period, "Maximum", "cpumax"),
@@ -31,7 +32,7 @@ def get_ec2_utilization(instance_ids: list[str], start: datetime, end: datetime,
             StartTime=start.astimezone(timezone.utc),
             EndTime=end.astimezone(timezone.utc),
             ScanBy="TimestampDescending",
-        )
+        ))
         by_id = {item.get("Id"): item for item in response.get("MetricDataResults", [])}
         def values(metric_id: str) -> list[float]:
             return [float(v) for v in by_id.get(metric_id, {}).get("Values", [])]
