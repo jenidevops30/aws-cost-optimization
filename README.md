@@ -20,6 +20,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - JSON, CSV, and Markdown report exports.
 - Bounded AWS SDK retries and classified API failures.
 - **FinOps Executive Governance snapshot combining spend, budgets, anomalies, forecast, findings, validation, and evidence status.**
+- **Executive dashboard accepts normalized billing CSV evidence and optional normalized governance JSON.**
 - Streamlit dashboard for interactive investigation and reporting.
 
 ## Architecture
@@ -45,9 +46,9 @@ AWS Billing / Cost Explorer / CSV
 
 ## FinOps Executive Governance
 
-Milestone #15 adds a deterministic governance layer above the existing collectors. It combines already-available evidence into a single executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and an explicit evidence state.
+Milestone #15 provides a deterministic governance layer above the existing collectors. It combines already-available evidence into a single executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and an explicit evidence state.
 
-The governance layer does not invent missing data, divide service-level spend across resources without billing evidence, claim causality, or perform remediation. It is analysis-only.
+The dashboard can load normalized billing CSV data and optional JSON evidence for budgets, anomalies, findings, forecast, and validation. It does not invent missing data, divide service-level spend across resources without billing evidence, claim causality, or perform remediation.
 
 ## Reporting & Validation
 
