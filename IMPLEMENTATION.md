@@ -11,7 +11,7 @@ CSV / Cost Explorer
         ↓
 Normalized Cost Records
         ↓
-Cost Analytics
+Cost Analytics + Cost Anomaly Detection
         ↓
 Inventory Correlation
         ↓
@@ -32,99 +32,65 @@ JSON / CSV / Markdown Report
 
 - Service-level monthly cost through `GetCostAndUsage`.
 - EC2 resource-level cost through `GetCostAndUsageWithResources` when AWS returns resource IDs.
-- RDS, EBS, and ELB are intentionally kept at service-level cost in the current implementation; it does not manufacture per-resource allocation.
+- RDS, EBS, and ELB remain service-level unless resource-level billing evidence exists.
 
-### EC2
+### Cost Anomaly Detection
 
-`DescribeInstances` supplies inventory. CloudWatch `GetMetricData` supplies CPU and network evidence.
+`src/cost_anomaly.py` calls the Cost Explorer `GetAnomalies` API in read-only mode. It accepts an explicit date interval and optional monitor ARN, consumes `NextPageToken`, and normalizes returned findings into a stable application model.
 
-### RDS
+Captured evidence includes:
 
-`DescribeDBInstances` supplies DB identifier, instance class, engine, status, Multi-AZ state, and allocated storage. CloudWatch `GetMetricData` supplies CPU, connections, free storage, ReadIOPS and WriteIOPS.
+- anomaly identifier
+- monitor ARN
+- anomaly start/end dates
+- AWS-reported `TotalImpact`
+- AWS-reported `TotalActualSpend`
+- available root causes: service, region, usage type, linked account
 
-### EBS
+The implementation does not calculate a replacement anomaly impact, invent pricing, or turn a finding into an automatic remediation. `TotalImpact` is presented as AWS-reported anomaly evidence.
 
-`DescribeVolumes` supplies volume inventory. CloudWatch `GetMetricData` supplies read/write operations, bytes, queue length, and idle time. Missing metrics remain unavailable.
+### EC2 / RDS / EBS / ALB
 
-### ALB
+Inventory and CloudWatch collectors remain read-only and use the shared resilience layer. Missing CloudWatch metrics remain unavailable rather than zero.
 
-ELBv2 `DescribeLoadBalancers` supplies load balancer ARN/name, type, scheme, state, DNS name, VPC, and Availability Zones.
+## 4. Cost Anomaly Dashboard
 
-CloudWatch `GetMetricData` supplies:
+`dashboard/pages/7_Cost_Anomaly_Detection.py` provides:
 
-- `RequestCount`
-- `ProcessedBytes`
-- `ActiveConnectionCount`
-- `NewConnectionCount`
-- `TargetResponseTime`
+1. Region and date-window selection.
+2. Optional Cost Anomaly Detection monitor ARN.
+3. Read-only anomaly retrieval.
+4. Count of returned findings.
+5. Sum of AWS-reported estimated impact values.
+6. Affected-service summary.
+7. Per-anomaly evidence table.
+8. Root-cause service/region display.
+9. Explicit analysis-only and causality warnings.
 
-For correctness, the collector treats the metric statistic as part of the data contract:
+If AWS retrieval fails, the dashboard shows a generic safe error rather than raw service exception content.
 
-- `RequestCount`, `ProcessedBytes`, and `NewConnectionCount` use `Sum` and are aggregated into totals across returned datapoints.
-- `ActiveConnectionCount` and `TargetResponseTime` use `Average` and are represented as arithmetic means of returned datapoints.
-- `GetMetricData` `NextToken` pagination is consumed until no token remains.
-- Missing metric results remain `None`/unavailable rather than becoming zero.
+## 5. Missing Data and AWS Failure Semantics
 
-The implementation presents these as operational evidence. It does not convert traffic volume into fabricated pricing or savings estimates.
+Missing CloudWatch metrics are represented as unavailable. They are never converted to zero.
 
-## 4. ALB Review Rules
-
-Default review signals are explicit and configurable:
-
-- Average request activity below 1 per metric period → `low-request-activity-review`.
-- Average processed bytes at/above 1 GB per metric period → `high-processed-bytes-review`.
-- Average target response time at/above 1 second → `high-target-response-time-review`.
-- Load balancer state other than active → `non-active-load-balancer-review`.
-
-These are investigation signals only. A human must verify traffic patterns, application behavior, target health, architecture requirements, and current AWS pricing before making a change.
-
-## 5. FinOps Reporting & Validation
-
-`src/finops_exports.py` provides deterministic, analysis-only export helpers:
-
-- `build_validation_summary()` compares two observed billing periods and reports the observed delta when both values are supplied.
-- `build_export_bundle()` attaches validation evidence to a report without changing the original findings.
-- `report_to_json()` creates a machine-readable JSON artifact.
-- `report_to_csv()` exports the monthly billing rows for spreadsheet analysis.
-- `report_to_markdown()` creates a human-readable engineering report.
-
-The validation status is deliberately limited to evidence that is actually available:
-
-- `insufficient-evidence` when one or both comparison values are missing.
-- `observed-reduction` when the comparison cost is lower than the baseline.
-- `no-observed-reduction` when the comparison cost is equal to or higher than the baseline.
-
-An observed reduction is **not** treated as proof of causality. The platform does not automatically attribute a billing change to a particular infrastructure optimization.
-
-The Streamlit page `dashboard/pages/6_FinOps_Reports_Validation.py` provides:
-
-1. Billing CSV selection and validation.
-2. Service filtering.
-3. Executive summary.
-4. Baseline/post-optimization period selection.
-5. Validation status and observed cost delta.
-6. JSON, CSV, and Markdown downloads.
-7. Read-only safety controls and attribution limitations.
-
-## 6. Missing Data and AWS Failure Semantics
-
-Missing CloudWatch metrics are represented as unavailable. They are never converted to zero because zero and missing are materially different operational states.
-
-Live AWS failures are handled separately by `src/aws_resilience.py`:
+Live AWS failures are handled by `src/aws_resilience.py`:
 
 - Boto3 clients use `standard` retry mode with a maximum of five attempts.
 - Connect timeout is 10 seconds and read timeout is 30 seconds.
-- `ClientError` and `BotoCoreError` failures are classified into stable categories.
-- Throttling is reported as `throttled`.
-- Permission failures are reported as `access-denied`.
-- Missing resources are reported as `not-found`.
-- Invalid request parameters are reported as `validation`.
-- AWS service failures and transport failures have separate states.
-- Raw AWS exception text is not used as the dashboard-facing error message.
+- AWS failures are classified into stable categories.
+- Raw AWS exception text is not used as dashboard-facing output.
 
-The SDK performs bounded retries for transient conditions. The application does not implement an unbounded retry loop and does not add retries around known validation or permission failures.
+The anomaly collector consumes pagination explicitly, so a multi-page response is not silently truncated.
 
-## 7. Dashboard
+## 6. ALB Review Rules
+
+The ALB collector treats `RequestCount`, `ProcessedBytes`, and `NewConnectionCount` as Sum metrics and `ActiveConnectionCount` and `TargetResponseTime` as Average metrics. `NextToken` pagination is consumed until complete.
+
+## 7. FinOps Reporting & Validation
+
+`src/finops_exports.py` provides deterministic, analysis-only JSON, CSV, and Markdown exports plus baseline/post-optimization validation. An observed reduction is not treated as proof of causality.
+
+## 8. Dashboard
 
 Run:
 
@@ -132,13 +98,9 @@ Run:
 streamlit run dashboard/app.py
 ```
 
-The dashboard provides separate EC2, RDS, EBS, ALB, and FinOps reporting pages. The reporting page uses the same normalized billing model and does not require AWS credentials when operating from the repository sample dataset.
+The Streamlit application includes dedicated EC2, RDS, EBS, ALB, FinOps reporting, and Cost Anomaly Detection pages.
 
-The ALB page explicitly labels Sum-derived fields as totals and Average-derived fields as averages, preventing the previous ambiguity where traffic totals were displayed as averages.
-
-Live AWS-facing views can use the classified failure states from `aws_resilience.py` so an API failure is not presented as empty/zero evidence. Raw AWS responses are intentionally not displayed to users.
-
-## 8. Testing
+## 9. Testing
 
 Run:
 
@@ -146,30 +108,21 @@ Run:
 python -m pytest -q
 ```
 
-The production-hardening milestone adds regression coverage for:
+Cost Anomaly Detection tests cover:
 
-- ALB Sum versus Average aggregation semantics.
-- Multi-page `GetMetricData` responses.
-- Existing invalid-window validation.
-- Analysis-only output mode.
+- date-window validation
+- maximum page-size validation
+- `NextPageToken` pagination
+- AWS impact field preservation
+- deterministic summary statistics
 
-The AWS API reliability milestone adds tests for:
+Existing tests continue to cover CloudWatch aggregation, missing-data semantics, AWS failure classification, read-only behavior, reporting exports, review signals, and dashboard wiring.
 
-- Standard bounded retry configuration.
-- Throttling classification.
-- Access-denied classification.
-- Not-found and validation classification.
-- Transport-error classification.
-- Safe conversion of AWS failures into application errors.
-- Dashboard-safe messages without raw service details.
+## 10. Security
 
-The reporting milestone also covers JSON/CSV/Markdown export, validation evidence requirements, observed cost deltas, and export-bundle integrity. Existing tests continue to cover metric query construction, review signals, missing-data handling, and dashboard source wiring.
+Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Dashboard errors must not expose raw AWS responses or sensitive service details.
 
-## 9. Security
-
-Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS/EBS/ELB mutation actions. Error messages shown to dashboard users must not expose raw AWS responses, request identifiers, credentials, or other sensitive service details.
-
-## 10. Recommendation Lifecycle
+## 11. Recommendation Lifecycle
 
 ```text
 IDENTIFIED
@@ -189,7 +142,7 @@ VALIDATED / NOT VALIDATED
 REPORTED
 ```
 
-## 11. Current Milestones
+## 12. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -202,4 +155,5 @@ REPORTED
 9. ALB and data-transfer investigation — complete.
 10. FinOps reports, exports, and validation workflows — complete.
 11. Production hardening — complete.
-12. AWS API reliability and error handling — in progress.
+12. AWS API reliability and error handling — complete.
+13. AWS Cost Anomaly Detection intelligence — in progress.
