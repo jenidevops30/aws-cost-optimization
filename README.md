@@ -1,8 +1,8 @@
 # AWS Billing & Cost Optimization Platform
 
-A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, and producing evidence-based optimization reviews and exportable reports.
+A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, producing evidence-based optimization reviews, governance signals, and exportable reports.
 
-> **Scope:** The platform is decision-support only. It does not automatically modify AWS resources. Production evidence must be sanitized before publication.
+> **Scope:** Decision-support only. It does not automatically modify AWS resources. Production evidence must be sanitized before publication.
 
 ## Current Capabilities
 
@@ -11,89 +11,51 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - EC2 resource-level cost attribution when Cost Explorer returns `RESOURCE_ID` data.
 - EC2 inventory and CloudWatch CPU/network utilization intelligence.
 - RDS inventory and CloudWatch CPU, connections, storage, and IOPS intelligence.
-- EBS inventory and CloudWatch I/O evidence for volume-level investigation.
+- EBS inventory and CloudWatch I/O evidence.
 - ALB inventory and CloudWatch traffic/data-transfer evidence.
-- AWS Cost Anomaly Detection findings with root-cause evidence.
-- AWS Budgets read-only governance intelligence for limits, actual spend, and forecast spend.
+- AWS Cost Anomaly Detection findings and root-cause evidence.
+- AWS Budgets read-only governance intelligence.
 - Cost/utilization correlation with explicit missing-data handling.
-- Anomaly detection and evidence-aware review signals.
 - FinOps executive reporting and baseline-vs-post-optimization validation.
 - JSON, CSV, and Markdown report exports.
-- Read-only AWS guardrails and automated tests.
-- Bounded standard AWS SDK retries and classified API failure states.
+- Bounded AWS SDK retries and classified API failures.
+- **FinOps Executive Governance snapshot combining spend, budgets, anomalies, forecast, findings, validation, and evidence status.**
 - Streamlit dashboard for interactive investigation and reporting.
 
 ## Architecture
 
 ```text
-AWS Cost Explorer ───────┐
-Historical CSV ──────────┤
-EC2 / RDS / EBS / ALB ───┤
-CloudWatch Metrics ──────┤
-Cost Anomaly Detection ──┤
-AWS Budgets ─────────────┘
-            │
-       Data Collection
-            │
-      Cost Analytics
-       /    |     \
-   Trends  Drivers  Anomalies
-       \    |     /
-       Evidence Correlation
-            │
-    Governance / Review Signals
-            │
-       Human Decision
-            │
-   Validate → Export Report
+AWS Billing / Cost Explorer / CSV
+        │
+        ├── Anomaly Detection
+        ├── AWS Budgets
+        ├── EC2 / RDS / EBS / ALB
+        └── CloudWatch Evidence
+                 │
+          Cost + Evidence Analytics
+                 │
+        Review / Governance Signals
+                 │
+        Executive Governance Snapshot
+                 │
+            Human Decision
+                 │
+        Validate → Report → Export
 ```
 
-## Cost Anomaly Detection
+## FinOps Executive Governance
 
-The platform can read AWS Cost Anomaly Detection findings through the Cost Explorer API. Findings include AWS-reported anomaly identifiers, time windows, estimated impact, actual spend, and available root-cause dimensions such as service, region, and usage type.
+Milestone #15 adds a deterministic governance layer above the existing collectors. It combines already-available evidence into a single executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and an explicit evidence state.
 
-The collector consumes API pagination and uses the shared AWS reliability layer. Anomaly impact is presented as AWS-reported evidence, not as a fabricated savings estimate. A finding is an investigation signal; it does not by itself establish causality or authorize an infrastructure change.
+The governance layer does not invent missing data, divide service-level spend across resources without billing evidence, claim causality, or perform remediation. It is analysis-only.
 
-## FinOps Reporting & Validation
+## Reporting & Validation
 
-The reporting milestone turns the analysis model into an auditable output workflow:
-
-- Executive summary of analyzed spend and findings.
-- Monthly spend and service totals.
-- Evidence-aware anomaly findings.
-- Baseline versus post-optimization period comparison.
-- Observed cost delta and percentage change when both periods are available.
-- JSON export for machine-readable workflows.
-- CSV export for monthly cost analysis.
-- Markdown export for engineering or portfolio documentation.
-
-A lower post-optimization cost is reported as an **observed reduction**, not as proof that a particular engineering change caused it. Attribution requires supporting operational evidence.
-
-## Budget Governance
-
-The budget governance module reads AWS Budgets through the read-only `DescribeBudgets` API and exposes:
-
-- Budget name and type.
-- Budget limit.
-- AWS-calculated actual spend when present.
-- AWS-calculated forecast spend when present.
-- Budget period and time unit.
-- Threshold-based investigation status: `within-limit`, `near-limit`, `over-budget`, or `insufficient-evidence`.
-- Pagination through `NextToken`.
-
-Forecast is preferred for governance status when AWS provides it; otherwise actual spend is used. The status is an investigation signal, not a prediction or authorization to change infrastructure. The module does not create, update, delete, or subscribe to budgets.
-
-## ALB & Data Transfer Intelligence
-
-The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch `GetMetricData` evidence for `RequestCount`, `ProcessedBytes`, `ActiveConnectionCount`, `NewConnectionCount`, and `TargetResponseTime`. Sum metrics are aggregated as totals, Average metrics as arithmetic means, and CloudWatch pagination is consumed until complete.
-
-## Production Hardening & Reliability
-
-The production-hardening work separates metric semantics and consumes CloudWatch pagination. The AWS API reliability layer configures bounded standard SDK retries, connection/read timeouts, stable failure classification, and dashboard-safe error messages. Missing evidence remains distinct from failed AWS calls.
+The reporting workflow provides executive summaries, monthly/service totals, anomaly findings, baseline/post-optimization comparison, and JSON/CSV/Markdown exports. A lower post-optimization period is reported as an observed reduction, not proof of causality.
 
 ## Safety Model
 
-The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. No application-level unbounded retry loop or automatic optimization action is introduced.
+The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. No automatic optimization action is introduced.
 
 ## Repository Structure
 
@@ -113,7 +75,8 @@ aws-cost-optimization/
 │   ├── cloudwatch_rds.py
 │   ├── cloudwatch_ebs.py
 │   ├── cloudwatch_alb.py
-│   └── finops_exports.py
+│   ├── finops_exports.py
+│   └── finops_governance.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
@@ -122,7 +85,8 @@ aws-cost-optimization/
 │       ├── 5_ALB_Data_Transfer_Intelligence.py
 │       ├── 6_FinOps_Reports_Validation.py
 │       ├── 7_Cost_Anomaly_Detection.py
-│       └── 8_Budget_Governance.py
+│       ├── 8_Budget_Governance.py
+│       └── 9_FinOps_Executive_Governance.py
 ├── tests/
 └── data/
     └── sample-billing.csv
