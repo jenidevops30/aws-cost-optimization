@@ -111,7 +111,15 @@ docker build -f deployment/Dockerfile -t aws-finops-control-center .
 docker run --rm -p 8501:8501 aws-finops-control-center
 ```
 
-The container exposes port `8501` and uses Streamlit's health endpoint for its Docker `HEALTHCHECK`. The build context excludes Git metadata, environment files, private keys, virtual environments, and common secret directories.
+The image exposes port `8501`, uses Streamlit's health endpoint for its Docker `HEALTHCHECK`, and runs the application as the unprivileged `app` user. The build context excludes Git metadata, environment files, private keys, virtual environments, and common secret directories.
+
+For the hardened production profile:
+
+```bash
+docker compose -f deployment/compose.production.yml up -d --build
+```
+
+The Compose profile configures a read-only root filesystem, drops all Linux capabilities, enables `no-new-privileges`, and mounts `/tmp` as a bounded tmpfs. These controls are container-level hardening; they do not provide an AWS deployment or modify cloud resources.
 
 For live AWS access, provide credentials through the deployment environment or an attached IAM role rather than embedding them in the image. The application itself does not create or modify AWS resources.
 
@@ -138,11 +146,13 @@ Run:
 python -m pytest -q
 ```
 
-The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness tests cover valid demo configuration, missing data directories, and the analysis-only live-mode contract.
+The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness tests cover valid demo configuration, missing data directories, and the analysis-only live-mode contract. The production CI path also builds the Docker image from `deployment/Dockerfile`.
 
 ## 12. Security
 
 Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Structured logging redacts common secret-like fields. Dashboard errors must not expose raw AWS responses or sensitive service details.
+
+The container runs without root privileges. The hardened Compose profile additionally applies a read-only root filesystem, `no-new-privileges`, and `cap_drop: ALL`. Container hardening reduces process privileges but is not a substitute for network controls, IAM controls, image scanning, or host security.
 
 ## 13. Recommendation Lifecycle
 
@@ -167,4 +177,5 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 13. AWS Cost Anomaly Detection intelligence — complete.
 14. AWS Budget Governance intelligence — complete.
 15. FinOps Executive Governance — complete.
-16. Production Deployment Readiness — in progress.
+16. Production Deployment Readiness — complete.
+17. Production Container Hardening — in progress.
