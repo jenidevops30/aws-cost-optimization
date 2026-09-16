@@ -2,16 +2,16 @@
 
 ## 1. Objective
 
-Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, infrastructure/utilization evidence, optimization review signals, savings validation, and auditable reports.
+Create an evidence-driven FinOps platform that turns AWS billing data into cost trends, cost-driver analysis, anomaly findings, infrastructure/utilization evidence, optimization review signals, savings validation, governance signals, and auditable reports.
 
 ## 2. Problem
 
-AWS bills can show that spending changed without immediately explaining which services or resources require investigation. The platform provides a repeatable workflow from spend data to evidence-backed engineering decisions.
+AWS bills can show that spending changed without immediately explaining which services or resources require investigation. Budget limits add a governance boundary, but budget status should be evaluated using the AWS-reported limit, actual spend, and forecast evidence rather than treated as an automatic remediation trigger.
 
 ## 3. Core Workflow
 
 ```text
-Collect → Normalize → Analyze → Detect → Investigate → Correlate → Recommend → Validate → Report → Export
+Collect → Normalize → Analyze → Detect → Investigate → Correlate → Govern → Recommend → Validate → Report → Export
 ```
 
 ## 4. Evidence Model
@@ -41,6 +41,17 @@ The repository contains historical monthly billing data from December 2025 throu
 The platform reads AWS Cost Anomaly Detection findings through the Cost Explorer API. Each finding can include an anomaly identifier, time window, AWS-reported estimated impact, actual spend, monitor ARN, and available root-cause dimensions.
 
 The collector handles `NextPageToken` pagination and passes AWS failures through the shared resilience layer. Root causes are preserved as evidence rather than converted into automatic recommendations. Anomaly impact is reported as AWS-returned evidence, not as a self-calculated savings estimate.
+
+### AWS Budget Governance
+
+The budget module reads AWS Budgets through `DescribeBudgets` and normalizes the budget limit, actual spend, forecast spend, time unit, and period. It consumes `NextToken` pagination and produces deterministic governance statuses:
+
+- `within-limit` when the selected reference spend is below 80% of the budget limit.
+- `near-limit` when the selected reference spend is at least 80% but below the limit.
+- `over-budget` when the selected reference spend reaches or exceeds the limit.
+- `insufficient-evidence` when a usable limit or spend reference is unavailable.
+
+AWS forecast spend is preferred over actual spend when available because the governance signal is intended to identify budgets approaching their configured limit. This is a threshold-based review signal, not a forecast guarantee. No budget mutation or notification-subscription API is used.
 
 ### Infrastructure investigation
 
@@ -121,6 +132,7 @@ A successful implementation can answer:
 9. Can the evidence be exported into a repeatable report?
 10. Can the system distinguish missing evidence from classified AWS API failure?
 11. Can AWS Cost Anomaly Detection findings be retrieved and paginated without introducing mutation capability?
+12. Can AWS budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
 
 ## 10. Non-Goals
 
@@ -131,3 +143,4 @@ A successful implementation can answer:
 - Treating missing utilization data as zero.
 - Retrying validation or permission failures through custom application loops.
 - Turning anomaly findings into automatic infrastructure changes.
+- Creating or modifying AWS Budgets or budget subscribers.

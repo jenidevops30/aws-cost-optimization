@@ -11,13 +11,13 @@ CSV / Cost Explorer
         ↓
 Normalized Cost Records
         ↓
-Cost Analytics + Cost Anomaly Detection
+Cost Analytics + Cost Anomaly Detection + Budgets
         ↓
 Inventory Correlation
         ↓
 CloudWatch Utilization / I/O / Traffic Evidence
         ↓
-Review Signals
+Review / Governance Signals
         ↓
 Human Review
         ↓
@@ -38,36 +38,40 @@ JSON / CSV / Markdown Report
 
 `src/cost_anomaly.py` calls the Cost Explorer `GetAnomalies` API in read-only mode. It accepts an explicit date interval and optional monitor ARN, consumes `NextPageToken`, and normalizes returned findings into a stable application model.
 
-Captured evidence includes:
+Captured evidence includes anomaly identifier, monitor ARN, anomaly start/end dates, AWS-reported `TotalImpact`, AWS-reported `TotalActualSpend`, and available root causes.
 
-- anomaly identifier
-- monitor ARN
-- anomaly start/end dates
-- AWS-reported `TotalImpact`
-- AWS-reported `TotalActualSpend`
-- available root causes: service, region, usage type, linked account
+### AWS Budgets
 
-The implementation does not calculate a replacement anomaly impact, invent pricing, or turn a finding into an automatic remediation. `TotalImpact` is presented as AWS-reported anomaly evidence.
+`src/aws_budgets.py` calls the AWS Budgets `DescribeBudgets` API in read-only mode.
+
+The collector:
+
+1. Requires an explicit AWS account ID.
+2. Uses the shared `aws_client()` reliability configuration.
+3. Consumes `NextToken` until the complete budget collection is retrieved.
+4. Normalizes `BudgetLimit`, `CalculatedSpend.ActualSpend`, `CalculatedSpend.ForecastedSpend`, time unit, and period.
+5. Uses forecast spend as the governance reference when available; otherwise actual spend.
+6. Produces deterministic statuses: `within-limit`, `near-limit`, `over-budget`, or `insufficient-evidence`.
+7. Converts classified AWS observation failures into safe application errors.
+
+The module intentionally contains no `CreateBudget`, `ModifyBudget`, `DeleteBudget`, notification-subscription, or infrastructure mutation operations.
 
 ### EC2 / RDS / EBS / ALB
 
 Inventory and CloudWatch collectors remain read-only and use the shared resilience layer. Missing CloudWatch metrics remain unavailable rather than zero.
 
-## 4. Cost Anomaly Dashboard
+## 4. Budget Governance Dashboard
 
-`dashboard/pages/7_Cost_Anomaly_Detection.py` provides:
+`dashboard/pages/8_Budget_Governance.py` provides:
 
-1. Region and date-window selection.
-2. Optional Cost Anomaly Detection monitor ARN.
-3. Read-only anomaly retrieval.
-4. Count of returned findings.
-5. Sum of AWS-reported estimated impact values.
-6. Affected-service summary.
-7. Per-anomaly evidence table.
-8. Root-cause service/region display.
-9. Explicit analysis-only and causality warnings.
+1. AWS region and account-ID input.
+2. Read-only budget retrieval.
+3. Budget count, over-budget count, near-limit count, and forecast summary.
+4. Budget limit, actual, forecast, period, and status table.
+5. Generic safe AWS error handling.
+6. Explicit analysis-only warning.
 
-If AWS retrieval fails, the dashboard shows a generic safe error rather than raw service exception content.
+The dashboard does not expose controls for changing budgets or resources.
 
 ## 5. Missing Data and AWS Failure Semantics
 
@@ -80,7 +84,7 @@ Live AWS failures are handled by `src/aws_resilience.py`:
 - AWS failures are classified into stable categories.
 - Raw AWS exception text is not used as dashboard-facing output.
 
-The anomaly collector consumes pagination explicitly, so a multi-page response is not silently truncated.
+Cost Anomaly Detection and AWS Budgets collectors consume API pagination explicitly, so multi-page responses are not silently truncated.
 
 ## 6. ALB Review Rules
 
@@ -98,7 +102,7 @@ Run:
 streamlit run dashboard/app.py
 ```
 
-The Streamlit application includes dedicated EC2, RDS, EBS, ALB, FinOps reporting, and Cost Anomaly Detection pages.
+The Streamlit application includes dedicated EC2, RDS, EBS, ALB, FinOps reporting, Cost Anomaly Detection, and Budget Governance pages.
 
 ## 9. Testing
 
@@ -108,15 +112,16 @@ Run:
 python -m pytest -q
 ```
 
-Cost Anomaly Detection tests cover:
+Budget Governance tests cover:
 
-- date-window validation
-- maximum page-size validation
-- `NextPageToken` pagination
-- AWS impact field preservation
+- account ID validation
+- `NextToken` pagination
+- actual and forecast field preservation
+- deterministic status classification
 - deterministic summary statistics
+- insufficient-evidence handling
 
-Existing tests continue to cover CloudWatch aggregation, missing-data semantics, AWS failure classification, read-only behavior, reporting exports, review signals, and dashboard wiring.
+Existing tests continue to cover CloudWatch aggregation, missing-data semantics, AWS failure classification, read-only behavior, reporting exports, review signals, anomaly pagination, and dashboard wiring.
 
 ## 10. Security
 
@@ -156,4 +161,5 @@ REPORTED
 10. FinOps reports, exports, and validation workflows — complete.
 11. Production hardening — complete.
 12. AWS API reliability and error handling — complete.
-13. AWS Cost Anomaly Detection intelligence — in progress.
+13. AWS Cost Anomaly Detection intelligence — complete.
+14. AWS Budget Governance intelligence — in progress.
