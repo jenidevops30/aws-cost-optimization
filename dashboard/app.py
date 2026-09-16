@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA = ROOT / "data" / "sample-billing.csv"
+DEFAULT_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
 
 st.set_page_config(page_title="AWS FinOps Control Center", page_icon="☁️", layout="wide", initial_sidebar_state="expanded")
 
@@ -32,6 +34,7 @@ with st.sidebar:
     else:
         uploaded = None
         st.info("LIVE mode is read-only.")
+        aws_region = st.text_input("AWS region for inventory", value=DEFAULT_REGION)
         default_start = date.today().replace(day=1) - timedelta(days=180)
         start = st.date_input("Start date", value=default_start)
         end = st.date_input("End date (exclusive)", value=date.today().replace(day=1))
@@ -104,7 +107,7 @@ previous = float(monthly.iloc[-2]["cost"]) if len(monthly) > 1 else 0.0
 mom_pct = ((latest - previous) / previous * 100) if previous else 0.0
 
 # Navigation keeps the dashboard focused instead of presenting every chart at once.
-tab_overview, tab_services, tab_alerts, tab_forecast, tab_evidence = st.tabs(["Overview", "Services", "Alerts", "Forecast & Savings", "Evidence"])
+tab_overview, tab_services, tab_alerts, tab_forecast, tab_infra, tab_evidence = st.tabs(["Overview", "Services", "Alerts", "Forecast & Savings", "Infrastructure", "Evidence"])
 
 with tab_overview:
     st.subheader("Executive overview")
@@ -136,11 +139,13 @@ with tab_services:
 with tab_alerts:
     st.subheader("Cost alerts & anomalies")
     from src.cost_engine import CostRecord
+    from src.alerting import alerts_from_anomalies
     from src.intelligence import detect_anomalies
     records = [CostRecord(str(r.billing_period),str(r.service),str(r.usage_type),str(r.region),float(r.cost)) for r in filtered.itertuples(index=False)]
     anomalies = detect_anomalies(records, threshold_pct=20.0)
-    if anomalies:
-        alert_df = pd.DataFrame([{"period":a.period,"service":a.service,"current_cost":a.cost,"baseline":a.baseline,"change_pct":a.change_pct,"severity":"CRITICAL" if abs(a.change_pct)>=75 else "WARNING"} for a in anomalies])
+    alerts = alerts_from_anomalies(anomalies)
+    if alerts:
+        alert_df = pd.DataFrame([{"period":a.period,"service":a.service,"current_cost":a.current_cost,"baseline":a.baseline_cost,"change_pct":a.change_pct,"severity":a.severity.upper(),"reason":a.reason} for a in alerts])
         st.dataframe(alert_df.style.format({"current_cost":"${:,.2f}","baseline":"${:,.2f}","change_pct":"{:+.1f}%"}), use_container_width=True, hide_index=True)
     else:
         st.success("No anomalies above the 20% threshold.")
@@ -163,12 +168,50 @@ with tab_forecast:
     else:
         st.info("At least two billing periods are required for forecasting.")
 
+with tab_infra:
+    st.subheader("AWS infrastructure — read-only observation")
+    if mode != "AWS Cost Explorer":
+        st.info("Switch the data source to **AWS Cost Explorer** to inspect the connected AWS region. Demo/CSV mode makes no AWS API calls.")
+    else:
+        st.caption(f"Inventory region: `{aws_region}` • observation only")
+        if st.button("↻ Refresh infrastructure inventory", use_container_width=True):
+            st.cache_data.clear()
+        try:
+            from src.aws_readonly import get_readonly_summary
+            with st.spinner(f"Reading EC2 and RDS inventory in {aws_region}…"):
+                inventory = get_readonly_summary(aws_region)
+            ec2 = pd.DataFrame(inventory["ec2"])
+            rds = pd.DataFrame(inventory["rds"])
+            c1,c2,c3,c4 = st.columns(4)
+            c1.metric("EC2 instances", len(ec2))
+            c2.metric("RDS instances", len(rds))
+            c3.metric("EC2 ARM64", int((ec2["architecture"] == "arm64").sum()) if not ec2.empty else 0)
+            c4.metric("RDS Multi-AZ", int(rds["multi_az"].fillna(False).astype(bool).sum()) if not rds.empty else 0)
+            left,right = st.columns(2)
+            with left:
+                st.markdown("#### EC2 inventory")
+                if ec2.empty:
+                    st.info("No EC2 instances returned for this region.")
+                else:
+                    st.dataframe(ec2[["instance_id","instance_type","state","az","architecture"]], use_container_width=True, hide_index=True)
+            with right:
+                st.markdown("#### RDS inventory")
+                if rds.empty:
+                    st.info("No RDS instances returned for this region.")
+                else:
+                    st.dataframe(rds[["identifier","class","engine","status","multi_az","storage_gb"]], use_container_width=True, hide_index=True)
+        except Exception as exc:
+            st.error("Unable to read AWS infrastructure inventory.")
+            st.code(str(exc))
+            st.caption("Check the selected region and the read-only AWS permissions. No mutation is attempted.")
+
 with tab_evidence:
     st.subheader("Evidence & controls")
     st.write("**Data source:**", source_label)
     st.write("**Operating mode:**", mode)
     st.write("**Cost scope:** service-level billing unless explicitly identified otherwise")
     st.write("**Mutation policy:** no resource creation, deletion, resizing, start/stop, or deployment")
+    st.write("**Credential policy:** boto3 standard credential chain; no AWS secrets stored in the repository")
     st.write("**Forecast policy:** historical analytical projection; not a guarantee")
     st.write("**Recommendation policy:** validate usage, sizing, architecture and billing assumptions before action")
     if mode == "AWS Cost Explorer":
