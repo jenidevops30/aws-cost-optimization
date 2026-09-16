@@ -22,6 +22,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **FinOps Executive Governance snapshot combining spend, budgets, anomalies, forecast, findings, validation, and evidence status.**
 - **Executive dashboard accepts normalized billing CSV evidence and optional normalized governance JSON.**
 - Streamlit dashboard for interactive investigation and reporting.
+- **Production deployment readiness checks with environment validation, deterministic readiness reporting, structured redacted logging, and a container health check.**
 
 ## Architecture
 
@@ -39,10 +40,18 @@ AWS Billing / Cost Explorer / CSV
                  │
         Executive Governance Snapshot
                  │
+          Runtime / Readiness Checks
+                 │
             Human Decision
                  │
         Validate → Report → Export
 ```
+
+## Production Deployment Readiness
+
+The platform now includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The dashboard container includes a health check against Streamlit's health endpoint and excludes common secret/configuration files from the Docker build context.
+
+Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced by the deployment layer.
 
 ## FinOps Executive Governance
 
@@ -65,6 +74,9 @@ aws-cost-optimization/
 ├── README.md
 ├── PROJECT.md
 ├── IMPLEMENTATION.md
+├── deployment/
+│   ├── Dockerfile
+│   └── .dockerignore
 ├── src/
 │   ├── cost_engine.py
 │   ├── aws_cost_explorer.py
@@ -77,7 +89,8 @@ aws-cost-optimization/
 │   ├── cloudwatch_ebs.py
 │   ├── cloudwatch_alb.py
 │   ├── finops_exports.py
-│   └── finops_governance.py
+│   ├── finops_governance.py
+│   └── deployment_readiness.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
@@ -99,6 +112,13 @@ aws-cost-optimization/
 python cli.py data/sample-billing.csv
 python -m pytest -q
 streamlit run dashboard/app.py
+```
+
+For the production container:
+
+```bash
+docker build -f deployment/Dockerfile -t aws-finops-control-center .
+docker run --rm -p 8501:8501 aws-finops-control-center
 ```
 
 ## Three Documentation Files
