@@ -37,3 +37,19 @@ jobs:
 
       - name: Run test suite
         run: python -m pytest -q
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build production container
+        run: docker build -f deployment/Dockerfile -t aws-finops-control-center:ci .
+
+      - name: Inspect container user
+        run: |
+          test "$(docker run --rm aws-finops-control-center:ci id -u)" != "0"
+
+      - name: Verify image metadata
+        run: docker image inspect aws-finops-control-center:ci >/dev/null
