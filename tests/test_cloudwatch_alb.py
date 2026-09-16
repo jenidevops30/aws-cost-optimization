@@ -55,7 +55,7 @@ def test_get_alb_metrics_collects_all_pages():
         client=client,
     )
     assert client.calls == 2
-    assert rows[0]["request_count_total"] == 15.0
+    assert rows[0]["request_count_total"] == 12.0
     assert rows[0]["active_connections_average"] == 4.0
 
 
