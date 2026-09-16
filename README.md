@@ -1,6 +1,6 @@
 # AWS Billing & Cost Optimization Platform
 
-A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, and producing evidence-based optimization reviews.
+A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, and producing evidence-based optimization reviews and exportable reports.
 
 > **Scope:** The platform is decision-support only. It does not automatically modify AWS resources. Production evidence must be sanitized before publication.
 
@@ -15,8 +15,10 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - ALB inventory and CloudWatch traffic/data-transfer evidence.
 - Cost/utilization correlation with explicit missing-data handling.
 - Anomaly detection and evidence-aware review signals.
+- FinOps executive reporting and baseline-vs-post-optimization validation.
+- JSON, CSV, and Markdown report exports.
 - Read-only AWS guardrails and automated tests.
-- Streamlit dashboard for interactive investigation.
+- Streamlit dashboard for interactive investigation and reporting.
 
 ## Architecture
 
@@ -38,8 +40,23 @@ CloudWatch Metrics ──────┘
             │
        Human Decision
             │
-          Report
+   Validate → Export Report
 ```
+
+## FinOps Reporting & Validation
+
+The reporting milestone turns the analysis model into an auditable output workflow:
+
+- Executive summary of analyzed spend and findings.
+- Monthly spend and service totals.
+- Evidence-aware anomaly findings.
+- Baseline versus post-optimization period comparison.
+- Observed cost delta and percentage change when both periods are available.
+- JSON export for machine-readable workflows.
+- CSV export for monthly cost analysis.
+- Markdown export for engineering or portfolio documentation.
+
+A lower post-optimization cost is reported as an **observed reduction**, not as proof that a particular engineering change caused it. Attribution requires supporting operational evidence.
 
 ## ALB & Data Transfer Intelligence
 
@@ -78,13 +95,15 @@ aws-cost-optimization/
 │   ├── ec2_utilization_intelligence.py
 │   ├── rds_intelligence.py
 │   ├── ebs_intelligence.py
-│   └── alb_intelligence.py
+│   ├── alb_intelligence.py
+│   └── finops_exports.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
 │       ├── 3_RDS_Cost_Intelligence.py
 │       ├── 4_EBS_Cost_Intelligence.py
-│       └── 5_ALB_Data_Transfer_Intelligence.py
+│       ├── 5_ALB_Data_Transfer_Intelligence.py
+│       └── 6_FinOps_Reports_Validation.py
 ├── tests/
 └── data/
     └── sample-billing.csv
@@ -97,6 +116,8 @@ python cli.py data/sample-billing.csv
 python -m pytest -q
 streamlit run dashboard/app.py
 ```
+
+For the reporting workflow, open the Streamlit multipage dashboard and select **FinOps Reports & Validation**.
 
 ## Three Documentation Files
 
