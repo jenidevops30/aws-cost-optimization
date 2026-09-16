@@ -23,6 +23,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **Executive dashboard accepts normalized billing CSV evidence and optional normalized governance JSON.**
 - Streamlit dashboard for interactive investigation and reporting.
 - **Production deployment readiness checks with environment validation, deterministic readiness reporting, structured redacted logging, and a container health check.**
+- **Hardened production container profile using a non-root user, dropped Linux capabilities, `no-new-privileges`, read-only root filesystem support, and Docker health checks.**
 
 ## Architecture
 
@@ -49,7 +50,9 @@ AWS Billing / Cost Explorer / CSV
 
 ## Production Deployment Readiness
 
-The platform now includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The dashboard container includes a health check against Streamlit's health endpoint and excludes common secret/configuration files from the Docker build context.
+The platform includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The dashboard container includes a health check against Streamlit's health endpoint and excludes common secret/configuration files from the Docker build context.
+
+The production container runs as an unprivileged `app` user. The production Compose profile can additionally enable a read-only root filesystem, drop all Linux capabilities, and enforce `no-new-privileges`. Temporary runtime state is isolated through a tmpfs mount.
 
 Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced by the deployment layer.
 
@@ -76,6 +79,7 @@ aws-cost-optimization/
 ├── IMPLEMENTATION.md
 ├── deployment/
 │   ├── Dockerfile
+│   ├── compose.production.yml
 │   └── .dockerignore
 ├── src/
 │   ├── cost_engine.py
@@ -120,6 +124,14 @@ For the production container:
 docker build -f deployment/Dockerfile -t aws-finops-control-center .
 docker run --rm -p 8501:8501 aws-finops-control-center
 ```
+
+For the hardened Compose profile:
+
+```bash
+docker compose -f deployment/compose.production.yml up -d --build
+```
+
+Review the production preflight in `IMPLEMENTATION.md` before enabling live AWS access.
 
 ## Three Documentation Files
 

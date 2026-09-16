@@ -69,6 +69,8 @@ The deployment-readiness layer adds a deterministic pre-deployment gate around t
 
 The dashboard is containerized with `deployment/Dockerfile`. The image uses Python 3.12, installs only the dashboard runtime requirements, exposes Streamlit on port `8501`, and includes a container health check against Streamlit's local health endpoint. `deployment/.dockerignore` excludes Git metadata, virtual environments, environment files, private keys, and common secret directories from the build context.
 
+The hardened image runs as an unprivileged `app` user rather than root. The production Compose profile additionally enables a read-only root filesystem, drops all Linux capabilities, enforces `no-new-privileges`, and provides a bounded tmpfs for temporary runtime state. These controls reduce the container's available privileges without changing the application's read-only AWS behavior.
+
 This milestone does not introduce an AWS deployment target or automated infrastructure provisioning. The container is a deployment artifact; runtime AWS access still follows the standard boto3 credential chain. Live mode remains analysis-only.
 
 ## 9. AWS Integration Principle
@@ -98,7 +100,9 @@ A successful implementation can answer:
 13. Can executive governance combine these signals without inventing missing evidence?
 14. Can an operator load normalized billing evidence and review governance signals without granting mutation permissions?
 15. Can a deployment candidate be checked for valid runtime configuration, required local paths, and explicit analysis-only safety before release?
-16. Can the dashboard run as a container with a health check and a reduced build context?
+16. Can the dashboard run as a non-root container with a health check and a reduced build context?
+17. Can the production Compose profile enforce a read-only filesystem, dropped capabilities, and `no-new-privileges`?
+18. Can CI validate that the production image builds successfully?
 
 ## 12. Non-Goals
 
