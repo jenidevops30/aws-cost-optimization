@@ -21,7 +21,9 @@ Review Signals
         ↓
 Human Review
         ↓
-Report / Validation
+Validation
+        ↓
+JSON / CSV / Markdown Report
 ```
 
 ## 3. AWS Read-Only Sources
@@ -69,11 +71,39 @@ Default review signals are explicit and configurable:
 
 These are investigation signals only. A human must verify traffic patterns, application behavior, target health, architecture requirements, and current AWS pricing before making a change.
 
-## 5. Missing Data Semantics
+## 5. FinOps Reporting & Validation
+
+`src/finops_exports.py` provides deterministic, analysis-only export helpers:
+
+- `build_validation_summary()` compares two observed billing periods and reports the observed delta when both values are supplied.
+- `build_export_bundle()` attaches validation evidence to a report without changing the original findings.
+- `report_to_json()` creates a machine-readable JSON artifact.
+- `report_to_csv()` exports the monthly billing rows for spreadsheet analysis.
+- `report_to_markdown()` creates a human-readable engineering report.
+
+The validation status is deliberately limited to evidence that is actually available:
+
+- `insufficient-evidence` when one or both comparison values are missing.
+- `observed-reduction` when the comparison cost is lower than the baseline.
+- `no-observed-reduction` when the comparison cost is equal to or higher than the baseline.
+
+An observed reduction is **not** treated as proof of causality. The platform does not automatically attribute a billing change to a particular infrastructure optimization.
+
+The Streamlit page `dashboard/pages/6_FinOps_Reports_Validation.py` provides:
+
+1. Billing CSV selection and validation.
+2. Service filtering.
+3. Executive summary.
+4. Baseline/post-optimization period selection.
+5. Validation status and observed cost delta.
+6. JSON, CSV, and Markdown downloads.
+7. Read-only safety controls and attribution limitations.
+
+## 6. Missing Data Semantics
 
 Missing CloudWatch metrics are represented as unavailable. They are never converted to zero because zero and missing are materially different operational states.
 
-## 6. Dashboard
+## 7. Dashboard
 
 Run:
 
@@ -81,9 +111,9 @@ Run:
 streamlit run dashboard/app.py
 ```
 
-The dashboard provides separate EC2, RDS, EBS, and ALB intelligence pages. The ALB page shows aggregate ELB Cost Explorer spend alongside load balancer inventory and CloudWatch traffic evidence, without pretending that service-level spend is per-load-balancer spend.
+The dashboard provides separate EC2, RDS, EBS, ALB, and FinOps reporting pages. The reporting page uses the same normalized billing model and does not require AWS credentials when operating from the repository sample dataset.
 
-## 7. Testing
+## 8. Testing
 
 Run:
 
@@ -91,13 +121,13 @@ Run:
 python -m pytest -q
 ```
 
-Tests cover metric query construction, aggregation, review signals, missing-data handling, and dashboard source wiring.
+The reporting milestone adds tests for JSON/CSV/Markdown export, validation evidence requirements, observed cost deltas, and export-bundle integrity. Existing tests continue to cover metric query construction, aggregation, review signals, missing-data handling, and dashboard source wiring.
 
-## 8. Security
+## 9. Security
 
 Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS/EBS/ELB mutation actions.
 
-## 9. Recommendation Lifecycle
+## 10. Recommendation Lifecycle
 
 ```text
 IDENTIFIED
@@ -113,9 +143,11 @@ IMPLEMENTED
 VALIDATING
     ↓
 VALIDATED / NOT VALIDATED
+    ↓
+REPORTED
 ```
 
-## 10. Current Milestones
+## 11. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -125,5 +157,5 @@ VALIDATED / NOT VALIDATED
 6. EC2 CloudWatch utilization intelligence — complete.
 7. RDS CloudWatch cost/utilization intelligence — complete.
 8. EBS capacity and I/O intelligence — complete.
-9. ALB and data-transfer investigation — current milestone.
-10. FinOps reports, exports, and validation workflows.
+9. ALB and data-transfer investigation — complete.
+10. FinOps reports, exports, and validation workflows — current milestone.
