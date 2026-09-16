@@ -42,7 +42,8 @@ The repository contains historical monthly billing data from December 2025 throu
 - EC2 inventory correlation.
 - RDS inventory correlation.
 - EBS volume inventory correlation.
-- CloudWatch utilization and I/O evidence.
+- ALB inventory correlation.
+- CloudWatch utilization, I/O, traffic, and performance evidence.
 - Explicit handling of unavailable metrics.
 
 ### EC2 intelligence
@@ -69,25 +70,23 @@ RDS Cost Explorer spend remains service-level in the current implementation. Agg
 
 ### EBS intelligence
 
-EBS volume inventory is collected through EC2 `DescribeVolumes` and correlated with CloudWatch evidence for:
-
-- `VolumeReadOps`
-- `VolumeWriteOps`
-- `VolumeReadBytes`
-- `VolumeWriteBytes`
-- `VolumeQueueLength`
-- `VolumeIdleTime`
-
-Review signals include:
-
-- Unattached-volume review.
-- Low-activity review.
-- High queue-length review.
-- `gp2` migration review.
-
-These signals are operational review candidates. They do not claim a volume is safe to delete, do not fabricate utilization percentages, and do not estimate savings without verified pricing and lifecycle evidence.
+EBS volume inventory is collected through EC2 `DescribeVolumes` and correlated with CloudWatch evidence for read/write operations, bytes, queue length, and idle time. Review signals include unattached volumes, low activity, high queue length, and `gp2` migration review.
 
 EBS Cost Explorer spend remains service-level in this implementation; aggregate EBS spend is not divided across volumes without resource-level billing evidence.
+
+### ALB & data transfer intelligence
+
+ALB inventory is collected through ELBv2 `DescribeLoadBalancers` and correlated with CloudWatch `GetMetricData` evidence for:
+
+- `RequestCount`
+- `ProcessedBytes`
+- `ActiveConnectionCount`
+- `NewConnectionCount`
+- `TargetResponseTime`
+
+Review signals include low request activity, high processed bytes, high target response time, and non-active load balancers. These are investigation candidates. They do not establish causality, calculate savings, or authorize an infrastructure change.
+
+Elastic Load Balancing Cost Explorer spend remains service-level in this implementation; aggregate ELB spend is not divided across individual load balancers without resource-level billing evidence.
 
 ### Optimization
 
@@ -95,7 +94,7 @@ EBS Cost Explorer spend remains service-level in this implementation; aggregate 
 - Graviton opportunity review
 - RDS capacity review
 - EBS capacity/type review
-- Network/data-transfer investigation
+- ALB and data-transfer investigation
 - Idle-resource investigation
 
 ### Validation
@@ -122,7 +121,7 @@ A successful implementation can answer:
 2. How did spend change over time?
 3. Which services drove the change?
 4. Which resources have verified cost attribution?
-5. What utilization and I/O evidence is available?
+5. What utilization, I/O, traffic, and performance evidence is available?
 6. Which findings require investigation?
 7. What optimization opportunities are supported by evidence?
 8. Did an implemented optimization produce an observed cost change?
