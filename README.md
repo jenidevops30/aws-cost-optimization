@@ -26,6 +26,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **Hardened production container profile using a non-root user, dropped Linux capabilities, `no-new-privileges`, read-only root filesystem support, and Docker health checks.**
 - **Production observability endpoints for liveness, readiness, and Prometheus-compatible in-process metrics.**
 - **Operational observability dashboard with runtime state, readiness checks, and metric visibility.**
+- **Security and compliance checks for secret patterns, Docker build context, read-only IAM actions, and dependency vulnerabilities.**
 
 ## Architecture
 
@@ -45,6 +46,8 @@ AWS Billing / Cost Explorer / CSV
                  │
        Runtime / Health / Metrics
                  │
+        Security / Compliance Gates
+                 │
             Human Decision
                  │
         Validate → Report → Export
@@ -63,6 +66,18 @@ Live AWS credentials continue to use the standard boto3 credential chain. No AWS
 The observability layer provides process-local operational signals without introducing a monitoring SaaS dependency. It records health/readiness requests, AWS operation status and duration when integrated through the shared helper, generates correlation IDs for future request instrumentation, classifies common AWS/dependency failures, and sanitizes secret-like error fields.
 
 `/health` is a liveness-style process check, `/readiness` evaluates the existing runtime readiness model, and `/metrics` exposes counters and duration summaries in Prometheus text format. These metrics are intentionally ephemeral and are not used as billing evidence.
+
+## Security & Compliance Hardening
+
+The security layer adds repository-level controls before release:
+
+- Secret-pattern scanning that reports pattern identifiers and never prints matched secret values.
+- Docker build-context validation for environment files, private keys, Git metadata, and secret directories.
+- Static validation that the repository IAM policy contains observation-only AWS actions.
+- CI dependency auditing with `pip-audit` against the dashboard runtime requirements.
+- A Streamlit security/compliance review page that reports control status and explicitly avoids claiming regulatory certification.
+
+These controls are preventive checks, not a substitute for organization-specific compliance programs, host security, network controls, or runtime cloud security review.
 
 ## FinOps Executive Governance
 
@@ -91,6 +106,9 @@ aws-cost-optimization/
 │   ├── entrypoint.py
 │   ├── health_server.py
 │   └── .dockerignore
+├── security/
+│   ├── readonly-policy.json
+│   └── compliance.py
 ├── src/
 │   ├── cost_engine.py
 │   ├── aws_cost_explorer.py
@@ -116,7 +134,8 @@ aws-cost-optimization/
 │       ├── 7_Cost_Anomaly_Detection.py
 │       ├── 8_Budget_Governance.py
 │       ├── 9_FinOps_Executive_Governance.py
-│       └── 10_Production_Observability.py
+│       ├── 10_Production_Observability.py
+│       └── 11_Security_Compliance.py
 ├── tests/
 └── data/
     └── sample-billing.csv
