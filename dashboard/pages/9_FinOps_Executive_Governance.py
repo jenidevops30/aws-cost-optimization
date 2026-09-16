@@ -18,6 +18,7 @@ st.info(
 )
 
 uploaded = st.file_uploader("Normalized billing CSV", type=["csv"])
+records: list[CostRecord] = []
 
 if uploaded is not None:
     try:
@@ -26,7 +27,6 @@ if uploaded is not None:
         missing = required - set(frame.columns)
         if missing:
             st.error(f"Missing required CSV columns: {', '.join(sorted(missing))}")
-            records: list[CostRecord] = []
         else:
             records = [
                 CostRecord(
@@ -42,9 +42,6 @@ if uploaded is not None:
             ]
     except (ValueError, TypeError) as exc:
         st.error(f"Unable to parse billing CSV: {exc}")
-        records = []
-else:
-    records = []
 
 monthly = [{"period": period, "cost": cost} for period, cost in monthly_totals(records).items()]
 
@@ -66,17 +63,27 @@ if evidence_text.strip():
         payload = json.loads(evidence_text)
         if not isinstance(payload, dict):
             raise ValueError("Evidence payload must be a JSON object")
-        for key, default in (("budgets", []), ("anomalies", []), ("findings", [])):
-            value = payload.get(key, default)
-            if not isinstance(value, list):
-                raise ValueError(f"{key} must be a JSON array")
-            locals()[key] = value
+
+        budgets_value = payload.get("budgets", [])
+        anomalies_value = payload.get("anomalies", [])
+        findings_value = payload.get("findings", [])
         forecast_value = payload.get("forecast")
         validation_value = payload.get("validation")
+
+        if not isinstance(budgets_value, list):
+            raise ValueError("budgets must be a JSON array")
+        if not isinstance(anomalies_value, list):
+            raise ValueError("anomalies must be a JSON array")
+        if not isinstance(findings_value, list):
+            raise ValueError("findings must be a JSON array")
         if forecast_value is not None and not isinstance(forecast_value, dict):
             raise ValueError("forecast must be a JSON object")
         if validation_value is not None and not isinstance(validation_value, dict):
             raise ValueError("validation must be a JSON object")
+
+        budgets = budgets_value
+        anomalies = anomalies_value
+        findings = findings_value
         forecast = forecast_value
         validation = validation_value
     except (json.JSONDecodeError, ValueError) as exc:
