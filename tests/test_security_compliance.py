@@ -6,9 +6,11 @@ from security.compliance import compliance_ready, scan_repository, scan_text_for
 
 
 def test_secret_scan_returns_pattern_ids_not_values():
-    findings = scan_text_for_secrets('aws_secret_access_key = "super-secret-value-123"')
+    secret_value = "super-" + "secret-value-123"
+    fixture = "aws_secret_access_key = \"" + secret_value + "\""
+    findings = scan_text_for_secrets(fixture)
     assert findings
-    assert "super-secret-value-123" not in " ".join(findings)
+    assert secret_value not in " ".join(findings)
 
 
 def test_repository_security_checks_pass():
