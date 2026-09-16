@@ -43,9 +43,9 @@ No AWS API is called by this aggregation layer and no resource is modified.
 
 ## 4. Executive Governance Dashboard
 
-`dashboard/pages/9_FinOps_Executive_Governance.py` provides an executive snapshot with latest cost, MoM change, budget alerts, anomaly count, evidence status, and a full governance table. The page is analysis-only and explicitly warns that attribution and savings claims require supporting evidence.
+`dashboard/pages/9_FinOps_Executive_Governance.py` provides an executive snapshot with latest cost, MoM change, budget alerts, anomaly count, cost trend, evidence status, review queue, and a full governance table.
 
-The dashboard is intentionally conservative: unavailable inputs remain unavailable instead of being converted into fabricated values.
+The page accepts the project's normalized billing CSV schema and optional JSON evidence with `budgets`, `anomalies`, `findings`, `forecast`, and `validation` keys. Invalid or incomplete evidence is surfaced explicitly rather than converted into defaults that imply evidence exists.
 
 ## 5. AWS Read-Only Sources
 
@@ -95,7 +95,7 @@ Run:
 python -m pytest -q
 ```
 
-Executive governance tests cover combined signals, MoM calculation, budget status counts, anomaly impact aggregation, forecast evidence, validation status, and insufficient-evidence handling.
+Executive governance tests cover combined signals, MoM calculation, budget status counts, anomaly impact aggregation, forecast evidence, validation status, missing-data handling, zero-baseline handling, and analysis-only dashboard contracts.
 
 ## 10. Security
 
@@ -123,4 +123,4 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 12. AWS API reliability and error handling — complete.
 13. AWS Cost Anomaly Detection intelligence — complete.
 14. AWS Budget Governance intelligence — complete.
-15. FinOps Executive Governance — in progress.
+15. FinOps Executive Governance — complete.
