@@ -108,10 +108,10 @@ Build and run the dashboard container:
 
 ```bash
 docker build -f deployment/Dockerfile -t aws-finops-control-center .
-docker run --rm -p 8501:8501 aws-finops-control-center
+docker run --rm -p 8501:8501 -p 8080:8080 aws-finops-control-center
 ```
 
-The image exposes port `8501`, uses Streamlit's health endpoint for its Docker `HEALTHCHECK`, and runs the application as the unprivileged `app` user. The build context excludes Git metadata, environment files, private keys, virtual environments, and common secret directories.
+The image exposes Streamlit on `8501` and the operational health server on `8080`. `deployment/entrypoint.py` starts both workloads. The Docker `HEALTHCHECK` calls `/health`; readiness is available separately through `/readiness`.
 
 For the hardened production profile:
 
@@ -123,7 +123,44 @@ The Compose profile configures a read-only root filesystem, drops all Linux capa
 
 For live AWS access, provide credentials through the deployment environment or an attached IAM role rather than embedding them in the image. The application itself does not create or modify AWS resources.
 
-## 10. Production Preflight
+## 10. Production Observability
+
+The operational health server is intentionally implemented with Python's standard library so the container does not need another runtime dependency.
+
+Endpoints:
+
+```text
+GET /health      → 200 when the health process is responding
+GET /readiness   → 200 when runtime readiness passes, otherwise 503
+GET /metrics     → Prometheus text-format process-local metrics
+```
+
+`src/observability.py` contains a thread-safe `MetricsRegistry`, correlation-ID generation, AWS/dependency failure classification, secret-like error sanitization, and a timing context manager for AWS operations.
+
+Example operational checks:
+
+```bash
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/readiness
+curl http://127.0.0.1:8080/metrics
+```
+
+The metrics registry is process-local and resets after a restart. It must not be used as a substitute for durable Prometheus storage, CloudWatch billing evidence, or incident history.
+
+### Failure classification
+
+The observability layer distinguishes common classes such as:
+
+- `configuration-error`
+- `dependency-error`
+- `aws-authentication-error`
+- `aws-permission-error`
+- `aws-throttling`
+- `application-error`
+
+Classification is diagnostic metadata, not proof of the underlying AWS root cause. Detailed AWS responses should remain outside user-facing errors.
+
+## 11. Production Preflight
 
 Before a production release:
 
@@ -132,13 +169,14 @@ Before a production release:
 3. Run `deployment_ready()` with the intended runtime configuration.
 4. Confirm the IAM identity uses the repository's read-only policy or an organization-approved equivalent.
 5. Confirm AWS region and data directory settings.
-6. Start the container and verify `/_stcore/health` locally.
-7. Open the dashboard and validate Demo/CSV mode first.
-8. Enable live mode only when AWS credentials and read-only permissions are confirmed.
-9. Confirm no credentials, `.env` files, private keys, or confidential evidence are present in the image/build context.
-10. Review logs for structured output and absence of secret-like values.
+6. Start the container and verify `/health` and `/readiness` locally.
+7. Verify `/metrics` responds with Prometheus text.
+8. Open the dashboard and validate Demo/CSV mode first.
+9. Enable live mode only when AWS credentials and read-only permissions are confirmed.
+10. Confirm no credentials, `.env` files, private keys, or confidential evidence are present in the image/build context.
+11. Review structured logs and error messages for secret-like values.
 
-## 11. Testing
+## 12. Testing
 
 Run:
 
@@ -146,21 +184,21 @@ Run:
 python -m pytest -q
 ```
 
-The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness tests cover valid demo configuration, missing data directories, and the analysis-only live-mode contract. The production CI path also builds the Docker image from `deployment/Dockerfile`.
+The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness and observability tests cover configuration, analysis-only behavior, correlation IDs, error classification, sanitization, metrics, and readiness. The production CI path also builds the Docker image and starts it to smoke-test `/health`, `/readiness`, and `/metrics`.
 
-## 12. Security
+## 13. Security
 
 Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Structured logging redacts common secret-like fields. Dashboard errors must not expose raw AWS responses or sensitive service details.
 
 The container runs without root privileges. The hardened Compose profile additionally applies a read-only root filesystem, `no-new-privileges`, and `cap_drop: ALL`. Container hardening reduces process privileges but is not a substitute for network controls, IAM controls, image scanning, or host security.
 
-## 13. Recommendation Lifecycle
+## 14. Recommendation Lifecycle
 
 ```text
 IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VALIDATING → VALIDATED / NOT VALIDATED → REPORTED
 ```
 
-## 14. Current Milestones
+## 15. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -178,4 +216,5 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 14. AWS Budget Governance intelligence — complete.
 15. FinOps Executive Governance — complete.
 16. Production Deployment Readiness — complete.
-17. Production Container Hardening — in progress.
+17. Production Container Hardening — complete.
+18. Production Observability — in progress.
