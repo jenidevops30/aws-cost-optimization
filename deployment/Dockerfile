@@ -5,7 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     STREAMLIT_SERVER_HEADLESS=true \
     STREAMLIT_SERVER_ENABLECORS=false \
     STREAMLIT_SERVER_ENABLEXSRSFPROTECTION=true \
-    HOME=/tmp/app-home
+    HOME=/tmp/app-home \
+    FINOPS_HEALTH_HOST=0.0.0.0 \
+    FINOPS_HEALTH_PORT=8080
 
 WORKDIR /app
 
@@ -21,9 +23,9 @@ COPY --chown=app:app . /app
 
 USER app
 
-EXPOSE 8501
+EXPOSE 8501 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"
 
-CMD ["streamlit", "run", "dashboard/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+CMD ["python", "deployment/entrypoint.py"]
