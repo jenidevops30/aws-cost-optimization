@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
-
-from .aws_resilience import observe, safe_error_message
+from .aws_resilience import AWSObservationError, aws_client, observe, safe_error_message
 
 
 @dataclass(frozen=True)
@@ -35,12 +31,13 @@ def _amount(value: Any) -> float | None:
 
 def _status(budget: dict[str, Any]) -> str:
     limit = _amount(budget.get("BudgetLimit"))
-    actual = _amount(budget.get("CalculatedSpend", {}).get("ActualSpend"))
-    forecast = _amount(budget.get("CalculatedSpend", {}).get("ForecastedSpend"))
-    if limit is None:
+    spend = budget.get("CalculatedSpend") or {}
+    actual = _amount(spend.get("ActualSpend"))
+    forecast = _amount(spend.get("ForecastedSpend"))
+    if limit is None or limit <= 0:
         return "insufficient-evidence"
     reference = forecast if forecast is not None else actual
-    if reference is None or limit <= 0:
+    if reference is None:
         return "insufficient-evidence"
     ratio = reference / limit
     if ratio >= 1:
@@ -50,35 +47,37 @@ def _status(budget: dict[str, Any]) -> str:
     return "within-limit"
 
 
-def _client(region: str):
-    return boto3.client("budgets", region_name=region)
-
-
 def get_budgets(account_id: str, region: str = "us-east-1", client=None) -> list[BudgetRecord]:
     if not account_id.strip():
         raise ValueError("account_id is required")
-    client = client or _client(region)
-    try:
-        response = observe(client.describe_budgets, AccountId=account_id)
-    except (ClientError, BotoCoreError) as exc:
-        raise RuntimeError(safe_error_message(exc)) from exc
-
+    client = client or aws_client("budgets", region)
     records: list[BudgetRecord] = []
-    for budget in response.get("Budgets", []):
-        period = budget.get("TimePeriod") or {}
-        records.append(
-            BudgetRecord(
-                name=str(budget.get("BudgetName", "unnamed")),
-                budget_type=str(budget.get("BudgetType", "UNKNOWN")),
-                limit_usd=_amount(budget.get("BudgetLimit")),
-                actual_usd=_amount(budget.get("CalculatedSpend", {}).get("ActualSpend")),
-                forecast_usd=_amount(budget.get("CalculatedSpend", {}).get("ForecastedSpend")),
-                time_unit=str(budget.get("TimeUnit", "UNKNOWN")),
-                time_period_start=period.get("Start"),
-                time_period_end=period.get("End"),
-                status=_status(budget),
-            )
-        )
+    token = None
+    try:
+        while True:
+            kwargs = {"AccountId": account_id}
+            if token:
+                kwargs["NextToken"] = token
+            response = observe(lambda: client.describe_budgets(**kwargs))
+            for budget in response.get("Budgets", []):
+                period = budget.get("TimePeriod") or {}
+                spend = budget.get("CalculatedSpend") or {}
+                records.append(BudgetRecord(
+                    name=str(budget.get("BudgetName", "unnamed")),
+                    budget_type=str(budget.get("BudgetType", "UNKNOWN")),
+                    limit_usd=_amount(budget.get("BudgetLimit")),
+                    actual_usd=_amount(spend.get("ActualSpend")),
+                    forecast_usd=_amount(spend.get("ForecastedSpend")),
+                    time_unit=str(budget.get("TimeUnit", "UNKNOWN")),
+                    time_period_start=period.get("Start"),
+                    time_period_end=period.get("End"),
+                    status=_status(budget),
+                ))
+            token = response.get("NextToken")
+            if not token:
+                break
+    except AWSObservationError as exc:
+        raise RuntimeError(safe_error_message(exc)) from exc
     return records
 
 
