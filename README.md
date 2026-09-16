@@ -68,9 +68,23 @@ The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch 
 - `NewConnectionCount`
 - `TargetResponseTime`
 
+Sum metrics are aggregated across the selected CloudWatch window, while Average metrics use the arithmetic mean of returned datapoints. CloudWatch pagination is consumed until all result pages are collected. The dashboard exposes the resulting totals/averages with explicit metric semantics.
+
 The dashboard keeps Elastic Load Balancing Cost Explorer spend at service level. It does **not** divide aggregate ELB cost across individual load balancers without resource-level billing evidence.
 
 Review signals include low request activity, high processed bytes, high target response time, and non-active load balancers. These are evidence-based investigation candidates, not automatic modification decisions. The platform does not fabricate data-transfer prices or savings.
+
+## Production Hardening
+
+The production-hardening milestone strengthens the ALB evidence path by:
+
+- Distinguishing CloudWatch `Sum` metrics from `Average` metrics.
+- Aggregating `RequestCount`, `ProcessedBytes`, and `NewConnectionCount` as totals rather than misleading averages.
+- Preserving `ActiveConnectionCount` and `TargetResponseTime` as averages.
+- Handling `GetMetricData` `NextToken` pagination.
+- Adding regression tests for aggregation and pagination.
+- Keeping missing metrics unavailable rather than treating them as zero.
+- Keeping all AWS integration analysis-only with no resource mutation APIs.
 
 ## Safety Model
 
