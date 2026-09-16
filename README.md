@@ -18,6 +18,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - FinOps executive reporting and baseline-vs-post-optimization validation.
 - JSON, CSV, and Markdown report exports.
 - Read-only AWS guardrails and automated tests.
+- Bounded standard AWS SDK retries and classified API failure states.
 - Streamlit dashboard for interactive investigation and reporting.
 
 ## Architecture
@@ -86,9 +87,22 @@ The production-hardening milestone strengthens the ALB evidence path by:
 - Keeping missing metrics unavailable rather than treating them as zero.
 - Keeping all AWS integration analysis-only with no resource mutation APIs.
 
+## AWS API Reliability
+
+The AWS API reliability milestone adds a shared resilience layer for live observation paths:
+
+- Boto3 clients use standard retry mode with a bounded maximum of five attempts.
+- Connection and read timeouts are bounded to avoid indefinitely hanging dashboard requests.
+- Final AWS failures are classified into stable states such as throttling, access denied, not found, validation, service, and transport errors.
+- Dashboard-facing error messages omit raw AWS responses and potentially sensitive request details.
+- Missing/empty CloudWatch data remains distinct from an AWS API failure.
+- Retries are handled by the SDK for transient failures; validation and permission failures are not blindly retried by application code.
+
+This layer changes reliability behavior only; it does not introduce any AWS mutation capability.
+
 ## Safety Model
 
-The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. Missing CloudWatch data is represented as unavailable rather than zero.
+The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. Missing CloudWatch data is represented as unavailable rather than zero, while failed AWS API calls are represented as explicit classified errors.
 
 ## Repository Structure
 
@@ -101,6 +115,7 @@ aws-cost-optimization/
 │   ├── cost_engine.py
 │   ├── aws_cost_explorer.py
 │   ├── aws_readonly.py
+│   ├── aws_resilience.py
 │   ├── cloudwatch_ec2.py
 │   ├── cloudwatch_rds.py
 │   ├── cloudwatch_ebs.py
