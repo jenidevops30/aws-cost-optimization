@@ -15,4 +15,4 @@ def test_rds_dashboard_uses_read_only_evidence_sources():
     assert "get_rds_utilization" in source
     assert "GetMetricData" in source
     assert "No RDS resources are modified" in source
-    assert "not be divided across DB instances" in source
+    assert "Cost Explorer data is service-level in this view" in source
