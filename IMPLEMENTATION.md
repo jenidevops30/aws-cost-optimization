@@ -2,78 +2,100 @@
 
 ## 1. Local Prototype
 
-The first implementation is provider-independent and works from normalized CSV billing data. This makes the analysis deterministic and testable before connecting an AWS account.
+The implementation works from normalized CSV billing data and can optionally connect to AWS through read-only APIs. Historical analysis remains deterministic and testable without AWS credentials.
 
 ## 2. Data Flow
 
 ```text
-CSV
- ↓
-Parser
- ↓
+CSV / Cost Explorer
+        ↓
 Normalized Cost Records
- ↓
-Monthly Analysis
- ↓
-Service Analysis
- ↓
-Findings
+        ↓
+Cost Analytics
+        ↓
+Inventory Correlation
+        ↓
+CloudWatch Utilization Evidence
+        ↓
+Review Signals
+        ↓
+Human Review
+        ↓
+Report / Validation
 ```
 
-## 3. Normalized Record
+## 3. AWS Read-Only Sources
 
-Each record uses:
+### Cost Explorer
 
-- `billing_period`
-- `service`
-- `usage_type`
-- `region`
-- `cost`
-- `currency`
-- `source`
+- Service-level monthly cost through `GetCostAndUsage`.
+- EC2 resource-level cost through `GetCostAndUsageWithResources` when AWS returns resource IDs.
+- RDS is intentionally kept at service-level cost in the current milestone; the implementation does not manufacture per-database allocation.
 
-## 4. Run the Prototype
+### EC2
+
+`DescribeInstances` supplies inventory. CloudWatch `GetMetricData` supplies CPU and network evidence.
+
+### RDS
+
+`DescribeDBInstances` supplies:
+
+- DB identifier
+- instance class
+- engine
+- status
+- Multi-AZ state
+- allocated storage
+
+CloudWatch `GetMetricData` supplies:
+
+- `CPUUtilization`
+- `DatabaseConnections`
+- `FreeStorageSpace`
+- `ReadIOPS`
+- `WriteIOPS`
+
+## 4. RDS Review Rules
+
+Default review thresholds are explicit and configurable:
+
+- Average CPU below 10% → `low-average-cpu-review`.
+- Average CPU at/above 80% → `high-average-cpu`.
+- Peak CPU at/above 80% → `high-peak-cpu`.
+- Average free storage below 20 GiB → `low-free-storage-review`.
+- Average free storage below 20% of allocated storage → `low-free-storage-percent-review`.
+
+These thresholds create review signals only. They do not estimate savings, recommend a specific DB class, or modify RDS.
+
+## 5. Missing Data Semantics
+
+A missing CloudWatch metric is represented as unavailable. It is never converted to zero because zero and missing are materially different operational states.
+
+## 6. Dashboard
+
+Run:
 
 ```bash
-python cli.py data/sample-billing.csv
+streamlit run dashboard/app.py
 ```
 
-## 5. Run Tests
+The dashboard provides separate EC2 and RDS intelligence pages. The RDS page shows aggregate Cost Explorer spend alongside DB inventory and utilization evidence, without pretending that service-level spend is per-instance spend.
+
+## 7. Testing
+
+Run:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pytest -q
 ```
 
-## 6. Analysis Rules
+Tests cover metric query construction, aggregation, review signals, missing-data handling, and dashboard source wiring.
 
-The initial engine calculates:
+## 8. Security
 
-- total spend
-- monthly spend
-- month-over-month absolute change
-- month-over-month percentage change
-- service totals
-- service-level changes
-- top cost contributors
+Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS mutation actions.
 
-It does not claim a root cause from billing data alone.
-
-## 7. Future AWS Read-Only Collector
-
-The AWS adapter should collect billing and resource metadata using a dedicated least-privilege read-only role. AWS access must remain optional so historical analysis works without credentials.
-
-Suggested read-only domains:
-
-- Billing / Cost Explorer
-- EC2
-- RDS
-- Elastic Load Balancing
-- VPC
-- CloudWatch
-
-No write permissions should be required.
-
-## 8. Recommendation Lifecycle
+## 9. Recommendation Lifecycle
 
 ```text
 IDENTIFIED
@@ -91,18 +113,15 @@ VALIDATING
 VALIDATED / NOT VALIDATED
 ```
 
-## 9. Security
+## 10. Current Milestones
 
-Never store AWS access keys in source code. Use environment-independent AWS credential mechanisms such as IAM roles in deployed environments. Sanitize all exported evidence before publication.
-
-## 10. Next Implementation Milestones
-
-1. CSV ingestion and normalization.
-2. Cost-analysis API/CLI.
-3. Dashboard.
-4. Anomaly detection.
-5. Resource-level investigation.
-6. Evidence-aware recommendations.
-7. Savings validation.
-8. AWS read-only integration.
-9. FinOps reports and exports.
+1. CSV ingestion and normalization — complete.
+2. Cost-analysis API/CLI — complete.
+3. Dashboard — complete.
+4. Anomaly detection — complete.
+5. EC2 resource-level investigation — complete.
+6. EC2 CloudWatch utilization intelligence — complete.
+7. RDS CloudWatch cost/utilization intelligence — current milestone.
+8. EBS capacity and I/O intelligence.
+9. ALB and data-transfer investigation.
+10. FinOps reports, exports, and validation workflows.

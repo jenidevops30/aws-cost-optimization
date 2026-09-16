@@ -14,4 +14,5 @@ def test_ec2_dashboard_is_read_only():
     assert "get_ec2_resource_costs" in source
     assert "get_ec2_inventory" in source
     assert "No EC2 resources are modified" in source
-    assert "savings estimate" in source
+    assert "Signals are review candidates, not automatic rightsizing decisions." in source
+    assert "CPU utilization is evidence for investigation, not a complete capacity model" in source

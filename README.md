@@ -1,51 +1,59 @@
 # AWS Billing & Cost Optimization Platform
 
-A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, generating evidence-based optimization recommendations, and validating savings.
+A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, and producing evidence-based optimization reviews.
 
-> **Scope:** This branch evolves the repository into an AWS billing and cost-optimization platform. It does not include the Wishlist application. S3 and CloudFront are intentionally excluded from this platform scope unless later verified as required.
+> **Scope:** The platform is decision-support only. It does not automatically modify AWS resources. Production evidence must be sanitized before publication.
 
-## Goals
+## Current Capabilities
 
-- Import historical AWS billing CSV data.
-- Normalize billing records into a consistent cost model.
-- Calculate monthly and service-level cost trends.
-- Detect unusual cost movements.
-- Correlate billing findings with AWS resource metadata when available.
-- Produce evidence-aware optimization recommendations.
-- Track optimization actions and savings validation.
-- Keep AWS integration strictly read-only.
-
-## Current Evidence
-
-The repository retains the historical billing case study used as project input. The platform must distinguish observed billing data from inferred causes and recommendations.
+- Historical AWS billing CSV analysis.
+- AWS Cost Explorer service-level cost collection.
+- EC2 resource-level cost attribution when Cost Explorer returns `RESOURCE_ID` data.
+- EC2 inventory and CloudWatch CPU/network utilization intelligence.
+- RDS inventory and CloudWatch CPU, connections, storage, and IOPS intelligence.
+- Cost/utilization correlation with explicit missing-data handling.
+- Anomaly detection and evidence-aware review signals.
+- Read-only AWS guardrails and automated tests.
+- Streamlit dashboard for interactive investigation.
 
 ## Architecture
 
 ```text
-AWS Billing / Cost Explorer     Historical CSV
-            |                         |
-            +-----------+-------------+
-                        |
-                  Data Ingestion
-                        |
-                    Normalize
-                        |
-                  Cost Analytics
-                   /    |    \
-                Trends Drivers Anomalies
-                   \    |    /
-                    Recommendations
-                           |
-                    Human Review
-                           |
-                    Savings Validation
-                           |
-                        Reports
+AWS Cost Explorer ───────┐
+Historical CSV ──────────┤
+EC2 / RDS Inventory ─────┤
+CloudWatch Metrics ──────┘
+            │
+       Data Collection
+            │
+      Cost Analytics
+       /    |     \
+   Trends  Drivers  Anomalies
+       \    |     /
+       Evidence Correlation
+            │
+    Review Recommendations
+            │
+       Human Decision
+            │
+          Report
 ```
+
+## RDS Intelligence
+
+The RDS module combines `DescribeDBInstances` inventory with CloudWatch `GetMetricData` evidence for:
+
+- `CPUUtilization`
+- `DatabaseConnections`
+- `FreeStorageSpace`
+- `ReadIOPS`
+- `WriteIOPS`
+
+The dashboard keeps RDS Cost Explorer spend at service level. It does **not** divide aggregate RDS cost across DB instances without resource-level billing evidence.
 
 ## Safety Model
 
-The AWS-connected implementation is read-only. It must not stop, terminate, resize, delete, create, or modify AWS resources.
+The AWS-connected implementation is read-only. It must not stop, terminate, reboot, resize, delete, create, or modify AWS resources. Missing CloudWatch data is represented as unavailable rather than zero.
 
 ## Repository Structure
 
@@ -55,10 +63,19 @@ aws-cost-optimization/
 ├── PROJECT.md
 ├── IMPLEMENTATION.md
 ├── src/
-│   └── cost_engine.py
-├── cli.py
+│   ├── cost_engine.py
+│   ├── aws_cost_explorer.py
+│   ├── aws_readonly.py
+│   ├── cloudwatch_ec2.py
+│   ├── cloudwatch_rds.py
+│   ├── ec2_intelligence.py
+│   ├── ec2_utilization_intelligence.py
+│   └── rds_intelligence.py
+├── dashboard/
+│   └── pages/
+│       ├── 2_EC2_Cost_Intelligence.py
+│       └── 3_RDS_Cost_Intelligence.py
 ├── tests/
-│   └── test_cost_engine.py
 └── data/
     └── sample-billing.csv
 ```
@@ -67,14 +84,15 @@ aws-cost-optimization/
 
 ```bash
 python cli.py data/sample-billing.csv
-python -m unittest discover -s tests -v
+python -m pytest -q
+streamlit run dashboard/app.py
 ```
 
 ## Three Documentation Files
 
 - `README.md` — public project overview.
 - `PROJECT.md` — complete FinOps case study, architecture, evidence, decisions, and outcomes.
-- `IMPLEMENTATION.md` — hands-on implementation, data model, commands, testing, and future AWS read-only integration.
+- `IMPLEMENTATION.md` — hands-on implementation, data model, commands, testing, and troubleshooting.
 
 ## Disclaimer
 
