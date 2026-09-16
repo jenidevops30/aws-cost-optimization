@@ -53,3 +53,28 @@ jobs:
 
       - name: Verify image metadata
         run: docker image inspect aws-finops-control-center:ci >/dev/null
+
+      - name: Smoke test operational endpoints
+        run: |
+          docker run -d --name finops-ci -p 8080:8080 -p 8501:8501 aws-finops-control-center:ci
+          trap 'docker logs finops-ci || true; docker rm -f finops-ci || true' EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          for _ in range(30):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=2) as response:
+                      assert response.status == 200
+                  break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit("health endpoint did not become ready")
+
+          with urllib.request.urlopen("http://127.0.0.1:8080/readiness", timeout=2) as response:
+              assert response.status == 200
+          with urllib.request.urlopen("http://127.0.0.1:8080/metrics", timeout=2) as response:
+              body = response.read().decode()
+              assert "finops_events_total" in body
+          PY
