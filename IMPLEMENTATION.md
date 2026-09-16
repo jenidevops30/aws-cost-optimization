@@ -58,13 +58,20 @@ CloudWatch `GetMetricData` supplies:
 - `NewConnectionCount`
 - `TargetResponseTime`
 
-The implementation presents these as raw/aggregated operational evidence. It does not convert traffic volume into fabricated pricing or savings estimates.
+For correctness, the collector treats the metric statistic as part of the data contract:
+
+- `RequestCount`, `ProcessedBytes`, and `NewConnectionCount` use `Sum` and are aggregated into totals across returned datapoints.
+- `ActiveConnectionCount` and `TargetResponseTime` use `Average` and are represented as arithmetic means of returned datapoints.
+- `GetMetricData` `NextToken` pagination is consumed until no token remains.
+- Missing metric results remain `None`/unavailable rather than becoming zero.
+
+The implementation presents these as operational evidence. It does not convert traffic volume into fabricated pricing or savings estimates.
 
 ## 4. ALB Review Rules
 
 Default review signals are explicit and configurable:
 
-- Average request count below 1 per metric period → `low-request-activity-review`.
+- Average request activity below 1 per metric period → `low-request-activity-review`.
 - Average processed bytes at/above 1 GB per metric period → `high-processed-bytes-review`.
 - Average target response time at/above 1 second → `high-target-response-time-review`.
 - Load balancer state other than active → `non-active-load-balancer-review`.
@@ -113,6 +120,8 @@ streamlit run dashboard/app.py
 
 The dashboard provides separate EC2, RDS, EBS, ALB, and FinOps reporting pages. The reporting page uses the same normalized billing model and does not require AWS credentials when operating from the repository sample dataset.
 
+The ALB page explicitly labels Sum-derived fields as totals and Average-derived fields as averages, preventing the previous ambiguity where traffic totals were displayed as averages.
+
 ## 8. Testing
 
 Run:
@@ -121,7 +130,14 @@ Run:
 python -m pytest -q
 ```
 
-The reporting milestone adds tests for JSON/CSV/Markdown export, validation evidence requirements, observed cost deltas, and export-bundle integrity. Existing tests continue to cover metric query construction, aggregation, review signals, missing-data handling, and dashboard source wiring.
+The production-hardening milestone adds regression coverage for:
+
+- ALB Sum versus Average aggregation semantics.
+- Multi-page `GetMetricData` responses.
+- Existing invalid-window validation.
+- Analysis-only output mode.
+
+The reporting milestone also covers JSON/CSV/Markdown export, validation evidence requirements, observed cost deltas, and export-bundle integrity. Existing tests continue to cover metric query construction, review signals, missing-data handling, and dashboard source wiring.
 
 ## 9. Security
 
@@ -158,4 +174,5 @@ REPORTED
 7. RDS CloudWatch cost/utilization intelligence — complete.
 8. EBS capacity and I/O intelligence — complete.
 9. ALB and data-transfer investigation — complete.
-10. FinOps reports, exports, and validation workflows — current milestone.
+10. FinOps reports, exports, and validation workflows — complete.
+11. Production hardening — in progress.

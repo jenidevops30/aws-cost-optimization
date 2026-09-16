@@ -60,7 +60,7 @@ st.subheader("ALB inventory + traffic evidence")
 if frame.empty:
     st.warning("No load balancers were returned in the selected region.")
 else:
-    columns = ["name", "type", "scheme", "state", "vpc_id", "availability_zones", "request_count_average", "processed_bytes_average", "active_connections_average", "new_connections_average", "target_response_time_average", "metrics_status", "signals"]
+    columns = ["name", "type", "scheme", "state", "vpc_id", "availability_zones", "request_count_total", "processed_bytes_total", "active_connections_average", "new_connections_total", "target_response_time_average", "metrics_status", "signals"]
     for column in columns:
         if column not in frame:
             frame[column] = None
@@ -81,5 +81,5 @@ for signal in ["low-request-activity-review", "high-processed-bytes-review", "hi
     count = int(frame["signals"].str.contains(signal, regex=False).sum()) if not frame.empty else 0
     st.write(f"**{signal}** — {count} load balancer(s)")
 
-st.warning("Signals are investigation candidates, not automatic modification decisions. CloudWatch traffic evidence is shown without converting it into fabricated prices or savings estimates.")
+st.warning("Signals are investigation candidates, not automatic modification decisions. Sum metrics are totals for the selected CloudWatch window; Average metrics are arithmetic means of returned datapoints. CloudWatch evidence is not converted into fabricated prices or savings estimates.")
 st.caption("Mode: analysis-only • Cost: ELB service-level Cost Explorer • Inventory: ELBv2 DescribeLoadBalancers • Traffic: CloudWatch GetMetricData")

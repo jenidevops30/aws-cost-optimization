@@ -102,6 +102,20 @@ The reporting layer packages the existing analysis into repeatable outputs:
 
 Validation is intentionally descriptive. A lower post-optimization period is recorded as an observed reduction, but the platform does not claim that a specific optimization caused the reduction without independent supporting evidence.
 
+### Production hardening
+
+The production-hardening milestone addresses correctness and reliability in the ALB evidence pipeline. CloudWatch metrics with `Sum` statistics are now aggregated across returned datapoints, while `Average` statistics remain averaged. `GetMetricData` pagination is consumed through `NextToken` until all pages are collected.
+
+Regression coverage verifies:
+
+- Sum versus Average semantics.
+- Multi-page CloudWatch responses.
+- Missing-data behavior.
+- Existing invalid-window validation.
+- Analysis-only mode remains intact.
+
+The dashboard field names now distinguish totals (`request_count_total`, `processed_bytes_total`, `new_connections_total`) from averages (`active_connections_average`, `target_response_time_average`).
+
 ### Optimization
 
 - EC2 right-sizing review
