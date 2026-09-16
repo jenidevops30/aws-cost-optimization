@@ -14,6 +14,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - EBS inventory and CloudWatch I/O evidence for volume-level investigation.
 - ALB inventory and CloudWatch traffic/data-transfer evidence.
 - AWS Cost Anomaly Detection findings with root-cause evidence.
+- AWS Budgets read-only governance intelligence for limits, actual spend, and forecast spend.
 - Cost/utilization correlation with explicit missing-data handling.
 - Anomaly detection and evidence-aware review signals.
 - FinOps executive reporting and baseline-vs-post-optimization validation.
@@ -29,7 +30,8 @@ AWS Cost Explorer ───────┐
 Historical CSV ──────────┤
 EC2 / RDS / EBS / ALB ───┤
 CloudWatch Metrics ──────┤
-Cost Anomaly Detection ──┘
+Cost Anomaly Detection ──┤
+AWS Budgets ─────────────┘
             │
        Data Collection
             │
@@ -39,7 +41,7 @@ Cost Anomaly Detection ──┘
        \    |     /
        Evidence Correlation
             │
-    Review Recommendations
+    Governance / Review Signals
             │
        Human Decision
             │
@@ -67,6 +69,20 @@ The reporting milestone turns the analysis model into an auditable output workfl
 
 A lower post-optimization cost is reported as an **observed reduction**, not as proof that a particular engineering change caused it. Attribution requires supporting operational evidence.
 
+## Budget Governance
+
+The budget governance module reads AWS Budgets through the read-only `DescribeBudgets` API and exposes:
+
+- Budget name and type.
+- Budget limit.
+- AWS-calculated actual spend when present.
+- AWS-calculated forecast spend when present.
+- Budget period and time unit.
+- Threshold-based investigation status: `within-limit`, `near-limit`, `over-budget`, or `insufficient-evidence`.
+- Pagination through `NextToken`.
+
+Forecast is preferred for governance status when AWS provides it; otherwise actual spend is used. The status is an investigation signal, not a prediction or authorization to change infrastructure. The module does not create, update, delete, or subscribe to budgets.
+
 ## ALB & Data Transfer Intelligence
 
 The ALB module combines ELBv2 `DescribeLoadBalancers` inventory with CloudWatch `GetMetricData` evidence for `RequestCount`, `ProcessedBytes`, `ActiveConnectionCount`, `NewConnectionCount`, and `TargetResponseTime`. Sum metrics are aggregated as totals, Average metrics as arithmetic means, and CloudWatch pagination is consumed until complete.
@@ -91,6 +107,7 @@ aws-cost-optimization/
 │   ├── aws_cost_explorer.py
 │   ├── aws_readonly.py
 │   ├── aws_resilience.py
+│   ├── aws_budgets.py
 │   ├── cost_anomaly.py
 │   ├── cloudwatch_ec2.py
 │   ├── cloudwatch_rds.py
@@ -104,7 +121,8 @@ aws-cost-optimization/
 │       ├── 4_EBS_Cost_Intelligence.py
 │       ├── 5_ALB_Data_Transfer_Intelligence.py
 │       ├── 6_FinOps_Reports_Validation.py
-│       └── 7_Cost_Anomaly_Detection.py
+│       ├── 7_Cost_Anomaly_Detection.py
+│       └── 8_Budget_Governance.py
 ├── tests/
 └── data/
     └── sample-billing.csv
@@ -126,4 +144,4 @@ streamlit run dashboard/app.py
 
 ## Disclaimer
 
-Production billing information must be sanitized before publication. Never commit AWS account IDs, credentials, secrets, private IPs, customer information, internal hostnames, or proprietary infrastructure code.
+Production billing information must be sanitized before publication. Never commit AWS account IDs, credentials, private IPs, customer information, internal hostnames, or proprietary infrastructure code.
