@@ -15,7 +15,7 @@ Cost Analytics
         ↓
 Inventory Correlation
         ↓
-CloudWatch Utilization / I/O Evidence
+CloudWatch Utilization / I/O / Traffic Evidence
         ↓
 Review Signals
         ↓
@@ -30,7 +30,7 @@ Report / Validation
 
 - Service-level monthly cost through `GetCostAndUsage`.
 - EC2 resource-level cost through `GetCostAndUsageWithResources` when AWS returns resource IDs.
-- RDS and EBS are intentionally kept at service-level cost in the current implementation; it does not manufacture per-resource allocation.
+- RDS, EBS, and ELB are intentionally kept at service-level cost in the current implementation; it does not manufacture per-resource allocation.
 
 ### EC2
 
@@ -42,38 +42,32 @@ Report / Validation
 
 ### EBS
 
-`DescribeVolumes` supplies:
+`DescribeVolumes` supplies volume inventory. CloudWatch `GetMetricData` supplies read/write operations, bytes, queue length, and idle time. Missing metrics remain unavailable.
 
-- Volume ID
-- volume type
-- size
-- state
-- Availability Zone
-- encryption state
-- configured IOPS/throughput when returned
-- attached EC2 instance IDs
+### ALB
+
+ELBv2 `DescribeLoadBalancers` supplies load balancer ARN/name, type, scheme, state, DNS name, VPC, and Availability Zones.
 
 CloudWatch `GetMetricData` supplies:
 
-- `VolumeReadOps`
-- `VolumeWriteOps`
-- `VolumeReadBytes`
-- `VolumeWriteBytes`
-- `VolumeQueueLength`
-- `VolumeIdleTime`
+- `RequestCount`
+- `ProcessedBytes`
+- `ActiveConnectionCount`
+- `NewConnectionCount`
+- `TargetResponseTime`
 
-The implementation presents these as raw/aggregated operational evidence. It does not turn them into fabricated utilization percentages or pricing estimates.
+The implementation presents these as raw/aggregated operational evidence. It does not convert traffic volume into fabricated pricing or savings estimates.
 
-## 4. EBS Review Rules
+## 4. ALB Review Rules
 
 Default review signals are explicit and configurable:
 
-- Available volume with no attachment → `unattached-volume-review`.
-- `gp2` volume → `gp2-migration-review`.
-- Average read + write operations below 1 operation per metric period → `low-activity-review`.
-- Average queue length at/above 1 → `high-queue-review`.
+- Average request count below 1 per metric period → `low-request-activity-review`.
+- Average processed bytes at/above 1 GB per metric period → `high-processed-bytes-review`.
+- Average target response time at/above 1 second → `high-target-response-time-review`.
+- Load balancer state other than active → `non-active-load-balancer-review`.
 
-These are investigation signals only. A human must verify workload ownership, lifecycle requirements, snapshots/backups, performance requirements, and current AWS pricing before making a change.
+These are investigation signals only. A human must verify traffic patterns, application behavior, target health, architecture requirements, and current AWS pricing before making a change.
 
 ## 5. Missing Data Semantics
 
@@ -87,7 +81,7 @@ Run:
 streamlit run dashboard/app.py
 ```
 
-The dashboard provides separate EC2, RDS, and EBS intelligence pages. The EBS page shows aggregate Cost Explorer spend alongside volume inventory and CloudWatch I/O evidence, without pretending that service-level spend is per-volume spend.
+The dashboard provides separate EC2, RDS, EBS, and ALB intelligence pages. The ALB page shows aggregate ELB Cost Explorer spend alongside load balancer inventory and CloudWatch traffic evidence, without pretending that service-level spend is per-load-balancer spend.
 
 ## 7. Testing
 
@@ -101,7 +95,7 @@ Tests cover metric query construction, aggregation, review signals, missing-data
 
 ## 8. Security
 
-Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS/EBS mutation actions.
+Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. The repository's AWS policy is observation-only and contains no EC2/RDS/EBS/ELB mutation actions.
 
 ## 9. Recommendation Lifecycle
 
@@ -130,6 +124,6 @@ VALIDATED / NOT VALIDATED
 5. EC2 resource-level investigation — complete.
 6. EC2 CloudWatch utilization intelligence — complete.
 7. RDS CloudWatch cost/utilization intelligence — complete.
-8. EBS capacity and I/O intelligence — current milestone.
-9. ALB and data-transfer investigation.
+8. EBS capacity and I/O intelligence — complete.
+9. ALB and data-transfer investigation — current milestone.
 10. FinOps reports, exports, and validation workflows.
