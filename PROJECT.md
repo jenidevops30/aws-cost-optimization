@@ -59,7 +59,7 @@ The executive governance layer aggregates existing normalized evidence instead o
 - Validation status.
 - Evidence state: `insufficient-evidence`, `cost-only`, or `multi-signal`.
 
-The Streamlit page `dashboard/pages/9_FinOps_Executive_Governance.py` surfaces this snapshot as an executive review view. It explicitly distinguishes missing evidence from zero and warns that the output is analysis-only.
+The Streamlit page `dashboard/pages/9_FinOps_Executive_Governance.py` surfaces this snapshot as an executive review view. It accepts the project's normalized billing CSV schema and optional JSON evidence for budgets, anomalies, findings, forecast, and validation. It explicitly distinguishes missing evidence from zero and warns that the output is analysis-only.
 
 The governance snapshot does **not** rank cloud providers, authorize changes, claim that an anomaly caused a cost increase, fabricate savings, or treat a forecast as a guarantee.
 
@@ -88,6 +88,7 @@ A successful implementation can answer:
 11. Can anomaly findings be retrieved and paginated without mutation capability?
 12. Can budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
 13. Can executive governance combine these signals without inventing missing evidence?
+14. Can an operator load normalized billing evidence and review governance signals without granting mutation permissions?
 
 ## 11. Non-Goals
 
