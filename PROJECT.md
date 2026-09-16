@@ -36,6 +36,12 @@ The repository contains historical monthly billing data from December 2025 throu
 - Cost contribution
 - Trend analysis
 
+### AWS Cost Anomaly Detection
+
+The platform reads AWS Cost Anomaly Detection findings through the Cost Explorer API. Each finding can include an anomaly identifier, time window, AWS-reported estimated impact, actual spend, monitor ARN, and available root-cause dimensions.
+
+The collector handles `NextPageToken` pagination and passes AWS failures through the shared resilience layer. Root causes are preserved as evidence rather than converted into automatic recommendations. Anomaly impact is reported as AWS-returned evidence, not as a self-calculated savings estimate.
+
 ### Infrastructure investigation
 
 - EC2 resource-level cost attribution when resource IDs are available.
@@ -56,78 +62,23 @@ The repository contains historical monthly billing data from December 2025 throu
 
 ### RDS intelligence
 
-RDS inventory is correlated with CloudWatch evidence for:
-
-- `CPUUtilization`
-- `DatabaseConnections`
-- `FreeStorageSpace`
-- `ReadIOPS`
-- `WriteIOPS`
-
-Review signals include low/high CPU and low free-storage conditions. These are investigation candidates, not automatic resizing decisions.
-
-RDS Cost Explorer spend remains service-level in the current implementation. Aggregate RDS cost is not divided across DB instances without resource-level billing evidence.
+RDS inventory is correlated with CloudWatch evidence for CPU, connections, free storage, ReadIOPS and WriteIOPS. Review signals are investigation candidates, not automatic resizing decisions.
 
 ### EBS intelligence
 
-EBS volume inventory is collected through EC2 `DescribeVolumes` and correlated with CloudWatch evidence for read/write operations, bytes, queue length, and idle time. Review signals include unattached volumes, low activity, high queue length, and `gp2` migration review.
-
-EBS Cost Explorer spend remains service-level in this implementation; aggregate EBS spend is not divided across volumes without resource-level billing evidence.
+EBS inventory is correlated with CloudWatch read/write operations, bytes, queue length, and idle time. Review signals include unattached volumes, low activity, high queue length, and `gp2` migration review.
 
 ### ALB & data transfer intelligence
 
-ALB inventory is collected through ELBv2 `DescribeLoadBalancers` and correlated with CloudWatch `GetMetricData` evidence for:
-
-- `RequestCount`
-- `ProcessedBytes`
-- `ActiveConnectionCount`
-- `NewConnectionCount`
-- `TargetResponseTime`
-
-Review signals include low request activity, high processed bytes, high target response time, and non-active load balancers. These are investigation candidates. They do not establish causality, calculate savings, or authorize an infrastructure change.
-
-Elastic Load Balancing Cost Explorer spend remains service-level in this implementation; aggregate ELB spend is not divided across individual load balancers without resource-level billing evidence.
+ALB inventory is correlated with CloudWatch `RequestCount`, `ProcessedBytes`, `ActiveConnectionCount`, `NewConnectionCount`, and `TargetResponseTime`. Sum metrics are aggregated as totals; Average metrics remain arithmetic means. Review signals are investigation candidates only.
 
 ### FinOps reporting and validation
 
-The reporting layer packages the existing analysis into repeatable outputs:
+The reporting layer packages analysis into executive summaries, monthly/service totals, anomaly findings, JSON/CSV/Markdown exports, and baseline/post-optimization comparisons. A lower post-optimization period is an observed reduction, not proof of causality.
 
-- Executive cost summary.
-- Monthly spend and service totals.
-- Anomaly findings.
-- JSON, CSV, and Markdown exports.
-- Baseline versus post-optimization comparison.
-- Observed cost delta and percentage change.
-- Explicit validation status and limitations.
+### Production hardening and AWS API reliability
 
-Validation is intentionally descriptive. A lower post-optimization period is recorded as an observed reduction, but the platform does not claim that a specific optimization caused the reduction without independent supporting evidence.
-
-### Production hardening
-
-The production-hardening milestone addresses correctness and reliability in the ALB evidence pipeline. CloudWatch metrics with `Sum` statistics are now aggregated across returned datapoints, while `Average` statistics remain averaged. `GetMetricData` pagination is consumed through `NextToken` until all pages are collected.
-
-Regression coverage verifies:
-
-- Sum versus Average semantics.
-- Multi-page CloudWatch responses.
-- Missing-data behavior.
-- Existing invalid-window validation.
-- Analysis-only mode remains intact.
-
-The dashboard field names now distinguish totals (`request_count_total`, `processed_bytes_total`, `new_connections_total`) from averages (`active_connections_average`, `target_response_time_average`).
-
-### AWS API reliability
-
-The AWS API reliability milestone introduces a shared boundary around live AWS observations:
-
-- Standard Boto3 retry mode is configured with a bounded maximum of five attempts.
-- Network connect/read timeouts are bounded.
-- Final AWS failures are classified into stable application categories rather than exposing raw service responses.
-- Throttling, permissions, validation, not-found, service, and transport failures are distinguishable.
-- Missing CloudWatch datapoints remain an evidence-availability state and are not confused with failed API calls.
-- The reliability layer remains observation-only and does not add mutation operations.
-
-This separation gives the dashboard enough information to explain whether evidence is missing, unavailable because a resource is absent, or unavailable because the AWS request failed.
+The platform uses correct ALB metric aggregation and consumes CloudWatch pagination. Live AWS observations use bounded standard SDK retries, connection/read timeouts, stable failure categories, and safe dashboard messages. Missing evidence remains distinct from API failure.
 
 ### Optimization
 
@@ -168,7 +119,8 @@ A successful implementation can answer:
 7. What optimization opportunities are supported by evidence?
 8. Did an implemented optimization produce an observed cost change?
 9. Can the evidence be exported into a repeatable report?
-10. If live AWS evidence fails, can the system distinguish missing data from a classified API failure without exposing raw AWS details?
+10. Can the system distinguish missing evidence from classified AWS API failure?
+11. Can AWS Cost Anomaly Detection findings be retrieved and paginated without introducing mutation capability?
 
 ## 10. Non-Goals
 
@@ -178,3 +130,4 @@ A successful implementation can answer:
 - Claiming savings attribution without evidence.
 - Treating missing utilization data as zero.
 - Retrying validation or permission failures through custom application loops.
+- Turning anomaly findings into automatic infrastructure changes.
