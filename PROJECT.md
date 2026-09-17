@@ -6,12 +6,12 @@ Create an evidence-driven FinOps platform that turns AWS billing data into cost 
 
 ## 2. Problem
 
-AWS bills can show that spending changed without immediately explaining which services or resources require investigation. Governance needs to combine spend, budgets, anomalies, forecast evidence, operational findings, and validation without turning incomplete evidence into unsupported conclusions.
+AWS bills can show that spending changed without immediately explaining which services or resources require investigation. Governance also needs to distinguish allocated organizational spend from spend for which ownership evidence is missing.
 
 ## 3. Core Workflow
 
 ```text
-Collect → Normalize → Analyze → Detect → Investigate → Correlate → Govern → Recommend → Validate → Report → Export
+Collect → Normalize → Analyze → Detect → Investigate → Correlate → Allocate → Govern → Recommend → Validate → Report → Export
 ```
 
 ## 4. Evidence Model
@@ -48,99 +48,62 @@ The repository contains historical monthly billing data from December 2025 throu
 
 ## 7. FinOps Executive Governance — Milestone #15
 
-The executive governance layer aggregates existing normalized evidence instead of introducing duplicate AWS collection paths. `src/finops_governance.py` produces a deterministic `GovernanceSnapshot` containing:
+The executive governance layer aggregates existing normalized evidence instead of introducing duplicate AWS collection paths. `src/finops_governance.py` produces a deterministic `GovernanceSnapshot` containing latest/previous cost, MoM change, optional forecast, budget status, anomaly impact, findings, validation, and evidence state.
 
-- Latest and previous analyzed cost.
-- Month-over-month percentage change when a valid previous period exists.
-- Forecast amount and confidence when supplied.
-- Budget count, over-budget count, and near-limit count.
-- Anomaly count and AWS-reported estimated impact when supplied.
-- Review-finding count.
-- Validation status.
-- Evidence state: `insufficient-evidence`, `cost-only`, or `multi-signal`.
-
-The Streamlit page `dashboard/pages/9_FinOps_Executive_Governance.py` surfaces this snapshot as an executive review view. It accepts the project's normalized billing CSV schema and optional JSON evidence for budgets, anomalies, findings, forecast, and validation. It explicitly distinguishes missing evidence from zero and warns that the output is analysis-only.
-
-The governance snapshot does **not** rank cloud providers, authorize changes, claim that an anomaly caused a cost increase, fabricate savings, or treat a forecast as a guarantee.
+The governance snapshot does not rank providers, authorize changes, claim anomaly causality, fabricate savings, or treat forecasts as guarantees.
 
 ## 8. Production Deployment Readiness — Milestone #16
 
-The deployment-readiness layer adds a deterministic pre-deployment gate around the existing runtime configuration and health model. `src/deployment_readiness.py` checks configuration status, configured data-directory availability, and the explicit read-only operating model.
+The deployment-readiness layer adds a deterministic pre-deployment gate around runtime configuration, data-directory availability, and the explicit read-only operating model. The production container uses Python 3.12, Streamlit on `8501`, and an operational health server on `8080`.
 
-The dashboard is containerized with `deployment/Dockerfile`. The image uses Python 3.12, installs only the dashboard runtime requirements, exposes Streamlit on port `8501`, and includes a container health check against the operational health endpoint. `deployment/.dockerignore` excludes Git metadata, virtual environments, environment files, private keys, and common secret directories from the build context.
-
-The hardened image runs as an unprivileged `app` user rather than root. The production Compose profile additionally enables a read-only root filesystem, drops all Linux capabilities, enforces `no-new-privileges`, and provides a bounded tmpfs for temporary runtime state. These controls reduce the container's available privileges without changing the application's read-only AWS behavior.
-
-This milestone does not introduce an AWS deployment target or automated infrastructure provisioning. The container is a deployment artifact; runtime AWS access still follows the standard boto3 credential chain. Live mode remains analysis-only.
+The hardened image runs as an unprivileged `app` user. The production Compose profile additionally enables a read-only root filesystem, drops Linux capabilities, enforces `no-new-privileges`, and provides bounded temporary storage.
 
 ## 9. Production Observability — Milestone #18
 
-The production observability layer adds a lightweight operational control plane beside Streamlit. `deployment/health_server.py` exposes:
-
-- `GET /health` — liveness-style process response.
-- `GET /readiness` — the existing deterministic runtime readiness report.
-- `GET /metrics` — Prometheus-compatible process-local counters and duration summaries.
-
-`deployment/entrypoint.py` starts the health server and Streamlit as one container workload and forwards termination signals to the dashboard process. The Docker health check now uses `/health`, while the hardened Compose profile keeps the health service internal unless an operator chooses to publish port `8080`.
-
-`src/observability.py` provides thread-safe counters/timers, correlation-ID generation, common AWS/dependency error classification, and sanitization of secret-like fields. The metrics registry is intentionally process-local: restarting a container resets it, so these signals are operational telemetry rather than durable billing evidence.
-
-The new `dashboard/pages/10_Production_Observability.py` gives operators runtime mode/region, readiness state, current process-local counters, and endpoint guidance. No mutation capability is introduced.
+The observability layer provides `/health`, `/readiness`, and `/metrics`, plus process-local counters/timers, correlation IDs, common AWS/dependency failure classification, and secret-like error sanitization. Metrics reset on restart and are not billing evidence.
 
 ## 10. Production Security & Compliance Hardening — Milestone #19
 
-This milestone adds release-gate controls that can be executed without AWS credentials or cloud mutations. `security/compliance.py` provides deterministic checks for:
-
-- Secret-like patterns in repository text. Findings return pattern identifiers only and never print matched values.
-- Docker build-context exclusions for environment files, private keys, Git metadata, and secret directories.
-- The repository IAM policy, rejecting actions outside the expected observation-only action families.
-
-The Streamlit page `dashboard/pages/11_Security_Compliance.py` surfaces these control results and states their scope explicitly. It does not claim regulatory certification or imply that static checks prove runtime security.
-
-CI also runs `pip-audit` against `dashboard/requirements.txt`. Dependency vulnerabilities are treated as a release signal that requires review; this workflow does not automatically upgrade packages or change the deployment.
-
-The security layer remains consistent with the platform safety model: no AWS mutation APIs, no credential storage, no secret values in reports, and no automatic remediation.
+The security layer provides deterministic checks for secret-like repository patterns, Docker build-context exclusions, and observation-only IAM actions. CI also runs `pip-audit` against dashboard requirements. These controls are release-gate evidence, not regulatory certification.
 
 ## 11. FinOps Alerting & Monitoring — Milestone #20
 
-The alerting layer consumes existing cost alerts and review findings without creating another AWS collection path. `src/alert_monitoring.py` gives each event a deterministic identity and suppresses repeated identical events in the process-local lifecycle store.
-
-Alert state is explicit:
-
-```text
-OPEN → ACKNOWLEDGED → RESOLVED
-```
-
-`src/alert_notifications.py` separates alert generation from notification transport. The console adapter is dependency-free for local/CI diagnostics, while the webhook adapter accepts an injected sender so the application does not embed HTTP credentials or provider-specific secrets.
-
-The Streamlit page `dashboard/pages/12_FinOps_Alerting_Monitoring.py` demonstrates the lifecycle and clearly labels the feature as analysis-only. Production notification delivery requires an operator-approved transport and external secret management.
-
-The alerting milestone does not stop, resize, reboot, terminate, delete, create, or modify AWS resources. Deduplication is process-local and is not a substitute for a durable alert store or enterprise incident-management platform.
+The alerting layer consumes existing cost alerts and review findings, assigns deterministic event identities, suppresses duplicates within process lifetime, and supports `OPEN → ACKNOWLEDGED → RESOLVED`. Notification transport is separated from alert generation and no AWS remediation is performed.
 
 ## 12. Multi-Account FinOps Intelligence — Milestone #21
 
-Multi-account analysis introduces an account boundary into the normalized cost model without requiring a second AWS collection path. `src/multi_account_finops.py` defines `AccountCostRecord` and deterministic aggregations for:
+`src/multi_account_finops.py` defines `AccountCostRecord` and deterministic account totals, account × service totals, and per-account period/MoM calculations. The account boundary is preserved throughout aggregation.
 
-- Account totals.
-- Account × service totals.
-- Per-account period and month-over-month comparisons.
-- Basic account-ID shape validation.
+The dashboard page `dashboard/pages/13_Multi_Account_FinOps.py` demonstrates the model with synthetic evidence. It does not assume AWS Organizations access or cross-account role assumption.
 
-The account boundary is preserved throughout aggregation. This is important because organizational spend should not silently combine production, staging, development, or other accounts into a single unexplained number.
+## 13. Cost Allocation Quality — Milestone #22
 
-`dashboard/pages/13_Multi_Account_FinOps.py` provides a review interface using normalized evidence. Its demonstration data is synthetic and is clearly separated from production billing evidence.
+Cost allocation quality is a separate evidence layer above account/service aggregation. `src/cost_allocation.py` defines `AllocationRecord` and classifies a record as `allocated` only when an explicit `allocation_key` is present. Records without that evidence remain `unallocated`.
 
-This milestone intentionally does **not** implement AWS Organizations discovery, cross-account role assumption, account vending, payer-account mutation, or automatic remediation. A future AWS Organizations integration should use explicitly approved read-only permissions and preserve account-level evidence provenance.
+The layer calculates:
 
-## 13. AWS Integration Principle
+- allocated and unallocated cost;
+- allocated and unallocated record counts;
+- allocation coverage percentage when total cost is non-zero;
+- unallocated spend grouped by account, service, region, or billing period.
+
+This design deliberately avoids guessing ownership from service names, account names, regions, resource counts, or other indirect signals. It also never redistributes unallocated spend across resources or teams.
+
+`dashboard/pages/14_Cost_Allocation_Quality.py` provides a review interface using synthetic evidence. Production usage should supply approved billing allocation keys, tagging evidence, account ownership metadata, or another explicitly documented allocation source.
+
+### Testing and failure safety
+
+`tests/test_cost_allocation.py` covers allocated/unallocated totals, coverage calculations, unallocated-dimension grouping, and invalid-dimension handling. The implementation raises an explicit error for unsupported dimensions rather than silently returning an incorrect grouping.
+
+## 14. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 14. Confidentiality
+## 15. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 15. Success Criteria
+## 16. Success Criteria
 
 A successful implementation can answer:
 
@@ -157,35 +120,32 @@ A successful implementation can answer:
 11. Can anomaly findings be retrieved and paginated without mutation capability?
 12. Can budget limits, actual spend, and forecast spend be inspected with explicit evidence states?
 13. Can executive governance combine these signals without inventing missing evidence?
-14. Can an operator load normalized billing evidence and review governance signals without granting mutation permissions?
-15. Can a deployment candidate be checked for valid runtime configuration, required local paths, and explicit analysis-only safety before release?
-16. Can the dashboard run as a non-root container with a health check and a reduced build context?
-17. Can the production Compose profile enforce a read-only filesystem, dropped capabilities, and `no-new-privileges`?
-18. Can CI validate that the production image builds successfully?
-19. Can an operator distinguish liveness from readiness without granting mutation permissions?
-20. Can operational counters and AWS call timing be exposed without treating ephemeral telemetry as billing evidence?
-21. Can common authentication, permission, throttling, dependency, configuration, and application failures be classified safely?
-22. Can a release candidate detect secret-like patterns without exposing their values?
-23. Can the Docker build context be checked for common sensitive-file exclusions?
-24. Can the repository IAM policy be validated as observation-only?
-25. Can runtime dependencies be audited for known published vulnerabilities?
-26. Can organizational cost be analyzed while preserving AWS account boundaries?
-27. Can account/service and per-account period comparisons be calculated deterministically?
+14. Can a deployment candidate be checked for valid runtime configuration and analysis-only safety?
+15. Can the dashboard run as a non-root container with health checks and a reduced build context?
+16. Can CI validate the production image and operational endpoints?
+17. Can liveness, readiness, and ephemeral operational metrics be distinguished?
+18. Can common AWS/dependency failures be classified safely?
+19. Can secret-like patterns, Docker build context, IAM policy, and dependency vulnerabilities be checked before release?
+20. Can organizational cost be analyzed while preserving AWS account boundaries?
+21. Can account/service and per-account period comparisons be calculated deterministically?
+22. Can the system distinguish explicitly allocated spend from unallocated spend without inventing ownership?
+23. Can unallocated spend be grouped by a supported dimension without silently changing its source evidence?
 
-## 16. Non-Goals
+## 17. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
 - Publishing confidential production configuration.
 - Claiming savings attribution without evidence.
-- Treating missing utilization data as zero.
+- Treating missing utilization or allocation evidence as zero.
 - Retrying validation or permission failures through custom application loops.
 - Turning anomaly findings into automatic infrastructure changes.
 - Creating or modifying AWS Budgets or budget subscribers.
-- Treating executive governance output as an autonomous remediation engine.
+- Treating governance output as an autonomous remediation engine.
 - Treating the container image as proof of a production deployment.
 - Treating process-local metrics as durable monitoring or billing history.
 - Treating static security checks as proof of regulatory compliance.
 - Automatically upgrading dependencies or remediating security findings.
 - Assuming cross-account access or credentials that have not been explicitly configured and approved.
-- Treating synthetic multi-account dashboard data as production billing evidence.
+- Treating synthetic multi-account or allocation dashboard data as production billing evidence.
+- Guessing cost ownership from indirect attributes.
