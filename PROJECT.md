@@ -87,15 +87,29 @@ The production observability layer adds a lightweight operational control plane 
 
 The new `dashboard/pages/10_Production_Observability.py` gives operators runtime mode/region, readiness state, current process-local counters, and endpoint guidance. No mutation capability is introduced.
 
-## 10. AWS Integration Principle
+## 10. Production Security & Compliance Hardening — Milestone #19
+
+This milestone adds release-gate controls that can be executed without AWS credentials or cloud mutations. `security/compliance.py` provides deterministic checks for:
+
+- Secret-like patterns in repository text. Findings return pattern identifiers only and never print matched values.
+- Docker build-context exclusions for environment files, private keys, Git metadata, and secret directories.
+- The repository IAM policy, rejecting actions outside the expected observation-only action families.
+
+The Streamlit page `dashboard/pages/11_Security_Compliance.py` surfaces these control results and states their scope explicitly. It does not claim regulatory certification or imply that static checks prove runtime security.
+
+CI also runs `pip-audit` against `dashboard/requirements.txt`. Dependency vulnerabilities are treated as a release signal that requires review; this workflow does not automatically upgrade packages or change the deployment.
+
+The security layer remains consistent with the platform safety model: no AWS mutation APIs, no credential storage, no secret values in reports, and no automatic remediation.
+
+## 11. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 11. Confidentiality
+## 12. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 12. Success Criteria
+## 13. Success Criteria
 
 A successful implementation can answer:
 
@@ -120,8 +134,12 @@ A successful implementation can answer:
 19. Can an operator distinguish liveness from readiness without granting mutation permissions?
 20. Can operational counters and AWS call timing be exposed without treating ephemeral telemetry as billing evidence?
 21. Can common authentication, permission, throttling, dependency, configuration, and application failures be classified safely?
+22. Can a release candidate detect secret-like patterns without exposing their values?
+23. Can the Docker build context be checked for common sensitive-file exclusions?
+24. Can the repository IAM policy be validated as observation-only?
+25. Can runtime dependencies be audited for known published vulnerabilities?
 
-## 13. Non-Goals
+## 14. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
@@ -134,3 +152,5 @@ A successful implementation can answer:
 - Treating executive governance output as an autonomous remediation engine.
 - Treating the container image as proof of a production deployment.
 - Treating process-local metrics as durable monitoring or billing history.
+- Treating static security checks as proof of regulatory compliance.
+- Automatically upgrading dependencies or remediating security findings.

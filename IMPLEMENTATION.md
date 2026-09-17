@@ -186,19 +186,45 @@ python -m pytest -q
 
 The CI matrix covers Python 3.11 and 3.12, Python compilation, and the full pytest suite. Deployment-readiness and observability tests cover configuration, analysis-only behavior, correlation IDs, error classification, sanitization, metrics, and readiness. The production CI path also builds the Docker image and starts it to smoke-test `/health`, `/readiness`, and `/metrics`.
 
+The security workflow additionally runs repository security tests and `pip-audit -r dashboard/requirements.txt` against declared dashboard dependencies. A dependency advisory is a review/release signal; the workflow does not auto-upgrade packages.
+
 ## 13. Security
 
 Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Structured logging redacts common secret-like fields. Dashboard errors must not expose raw AWS responses or sensitive service details.
 
 The container runs without root privileges. The hardened Compose profile additionally applies a read-only root filesystem, `no-new-privileges`, and `cap_drop: ALL`. Container hardening reduces process privileges but is not a substitute for network controls, IAM controls, image scanning, or host security.
 
-## 14. Recommendation Lifecycle
+## 14. Security & Compliance Hardening
+
+The repository security gate is implemented in `security/compliance.py`.
+
+### Secret-pattern scan
+
+The scanner checks text-like source/configuration files for a small set of high-signal credential patterns. It returns pattern identifiers and counts only; it never places matched values in dashboard output, logs, or test assertions.
+
+### Docker build context
+
+`deployment/.dockerignore` must exclude common sensitive inputs such as `.env`, environment variants, private-key extensions, Git metadata, and the `secrets/` directory. The check fails if required exclusions are missing.
+
+### Read-only IAM policy validation
+
+`security/readonly-policy.json` is parsed as JSON and its allowed actions are checked against the platform's observation-only AWS action families. Actions associated with resource creation, deletion, termination, modification, start/stop, attachment, authorization, or revocation are rejected by the static validator.
+
+### Dependency audit
+
+CI runs `pip-audit` against `dashboard/requirements.txt`. This identifies known published Python dependency vulnerabilities; it does not guarantee that the complete runtime or host is vulnerability-free.
+
+### Dashboard review
+
+`dashboard/pages/11_Security_Compliance.py` displays the static control results and their limitations. It is a review aid, not a compliance certification system.
+
+## 15. Recommendation Lifecycle
 
 ```text
 IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VALIDATING → VALIDATED / NOT VALIDATED → REPORTED
 ```
 
-## 15. Current Milestones
+## 16. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -218,3 +244,4 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 16. Production Deployment Readiness — complete.
 17. Production Container Hardening — complete.
 18. Production Observability — in progress.
+19. Production Security & Compliance Hardening — in progress.
