@@ -101,15 +101,46 @@ CI also runs `pip-audit` against `dashboard/requirements.txt`. Dependency vulner
 
 The security layer remains consistent with the platform safety model: no AWS mutation APIs, no credential storage, no secret values in reports, and no automatic remediation.
 
-## 11. AWS Integration Principle
+## 11. FinOps Alerting & Monitoring — Milestone #20
+
+The alerting layer consumes existing cost alerts and review findings without creating another AWS collection path. `src/alert_monitoring.py` gives each event a deterministic identity and suppresses repeated identical events in the process-local lifecycle store.
+
+Alert state is explicit:
+
+```text
+OPEN → ACKNOWLEDGED → RESOLVED
+```
+
+`src/alert_notifications.py` separates alert generation from notification transport. The console adapter is dependency-free for local/CI diagnostics, while the webhook adapter accepts an injected sender so the application does not embed HTTP credentials or provider-specific secrets.
+
+The Streamlit page `dashboard/pages/12_FinOps_Alerting_Monitoring.py` demonstrates the lifecycle and clearly labels the feature as analysis-only. Production notification delivery requires an operator-approved transport and external secret management.
+
+The alerting milestone does not stop, resize, reboot, terminate, delete, create, or modify AWS resources. Deduplication is process-local and is not a substitute for a durable alert store or enterprise incident-management platform.
+
+## 12. Multi-Account FinOps Intelligence — Milestone #21
+
+Multi-account analysis introduces an account boundary into the normalized cost model without requiring a second AWS collection path. `src/multi_account_finops.py` defines `AccountCostRecord` and deterministic aggregations for:
+
+- Account totals.
+- Account × service totals.
+- Per-account period and month-over-month comparisons.
+- Basic account-ID shape validation.
+
+The account boundary is preserved throughout aggregation. This is important because organizational spend should not silently combine production, staging, development, or other accounts into a single unexplained number.
+
+`dashboard/pages/13_Multi_Account_FinOps.py` provides a review interface using normalized evidence. Its demonstration data is synthetic and is clearly separated from production billing evidence.
+
+This milestone intentionally does **not** implement AWS Organizations discovery, cross-account role assumption, account vending, payer-account mutation, or automatic remediation. A future AWS Organizations integration should use explicitly approved read-only permissions and preserve account-level evidence provenance.
+
+## 13. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 12. Confidentiality
+## 14. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 13. Success Criteria
+## 15. Success Criteria
 
 A successful implementation can answer:
 
@@ -138,8 +169,10 @@ A successful implementation can answer:
 23. Can the Docker build context be checked for common sensitive-file exclusions?
 24. Can the repository IAM policy be validated as observation-only?
 25. Can runtime dependencies be audited for known published vulnerabilities?
+26. Can organizational cost be analyzed while preserving AWS account boundaries?
+27. Can account/service and per-account period comparisons be calculated deterministically?
 
-## 14. Non-Goals
+## 16. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
@@ -154,19 +187,5 @@ A successful implementation can answer:
 - Treating process-local metrics as durable monitoring or billing history.
 - Treating static security checks as proof of regulatory compliance.
 - Automatically upgrading dependencies or remediating security findings.
-
-## 15. FinOps Alerting & Monitoring — Next Milestone
-
-The alerting layer consumes existing cost alerts and review findings without creating another AWS collection path. `src/alert_monitoring.py` gives each event a deterministic identity and suppresses repeated identical events in the process-local lifecycle store.
-
-Alert state is explicit:
-
-```text
-OPEN → ACKNOWLEDGED → RESOLVED
-```
-
-`src/alert_notifications.py` separates alert generation from notification transport. The console adapter is dependency-free for local/CI diagnostics, while the webhook adapter accepts an injected sender so the application does not embed HTTP credentials or provider-specific secrets.
-
-The Streamlit page `dashboard/pages/12_FinOps_Alerting_Monitoring.py` demonstrates the lifecycle and clearly labels the feature as analysis-only. Production notification delivery requires an operator-approved transport and external secret management.
-
-The alerting milestone does not stop, resize, reboot, terminate, delete, create, or modify AWS resources. Deduplication is process-local and is not a substitute for a durable alert store or enterprise incident-management platform.
+- Assuming cross-account access or credentials that have not been explicitly configured and approved.
+- Treating synthetic multi-account dashboard data as production billing evidence.
