@@ -218,11 +218,52 @@ CI runs `pip-audit` against `dashboard/requirements.txt`. This identifies known 
 
 `dashboard/pages/11_Security_Compliance.py` displays the static control results and their limitations. It is a review aid, not a compliance certification system.
 
-## 15. Recommendation Lifecycle
+## 15. FinOps Alerting & Monitoring
+
+The alerting layer is intentionally separated into event lifecycle and notification transport.
+
+### Alert lifecycle
 
 ```text
-IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VALIDATING → VALIDATED / NOT VALIDATED → REPORTED
+Cost / finding signal
+       ↓
+   AlertMonitor
+       ↓
+Deduplicate by deterministic key
+       ↓
+OPEN → ACKNOWLEDGED → RESOLVED
 ```
+
+`AlertMonitor.ingest_cost_alerts()` consumes existing `CostAlert` objects. `ingest_findings()` accepts normalized finding mappings so future collectors can integrate without adding AWS mutation paths.
+
+Deduplication is process-local. An identical service/period/reason or finding/period/detail identity is not emitted twice during the same process lifetime.
+
+### Notification adapters
+
+`src/alert_notifications.py` contains:
+
+- `ConsoleNotifier` for dependency-free local/CI diagnostics.
+- `WebhookNotifier` with an injected sender, keeping HTTP implementation and credentials outside the alerting core.
+- `webhook_payload()` for deterministic JSON serialization.
+
+Example:
+
+```python
+from src.alert_monitoring import AlertMonitor
+from src.alert_notifications import ConsoleNotifier
+
+monitor = AlertMonitor()
+new_events = monitor.ingest_cost_alerts(alerts)
+ConsoleNotifier().send(new_events)
+```
+
+No AWS credentials or webhook secrets belong in the source tree. Production notification delivery should use an approved secret-management mechanism.
+
+### Dashboard
+
+`dashboard/pages/12_FinOps_Alerting_Monitoring.py` provides a lightweight review interface and demonstrates alert creation, deduplication messaging, lifecycle states, and the analysis-only safety model.
+
+The demo monitor is process-local and resets on application restart. It is not a durable incident-management system.
 
 ## 16. Current Milestones
 
@@ -245,3 +286,4 @@ IDENTIFIED → ANALYZED → RECOMMENDED → HUMAN REVIEW → IMPLEMENTED → VAL
 17. Production Container Hardening — complete.
 18. Production Observability — in progress.
 19. Production Security & Compliance Hardening — in progress.
+20. FinOps Alerting & Monitoring — in progress.
