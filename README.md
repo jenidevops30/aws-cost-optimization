@@ -9,66 +9,79 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - Historical AWS billing CSV analysis.
 - AWS Cost Explorer service-level cost collection.
 - EC2 resource-level cost attribution when Cost Explorer returns `RESOURCE_ID` data.
-- EC2 inventory and CloudWatch CPU/network utilization intelligence.
-- RDS inventory and CloudWatch CPU, connections, storage, and IOPS intelligence.
-- EBS inventory and CloudWatch I/O evidence.
-- ALB inventory and CloudWatch traffic/data-transfer evidence.
-- AWS Cost Anomaly Detection findings and root-cause evidence.
-- AWS Budgets read-only governance intelligence.
+- EC2, RDS, EBS, and ALB inventory/utilization intelligence.
+- AWS Cost Anomaly Detection and AWS Budgets read-only governance intelligence.
 - Cost/utilization correlation with explicit missing-data handling.
-- FinOps executive reporting and baseline-vs-post-optimization validation.
-- JSON, CSV, and Markdown report exports.
+- FinOps executive reporting, validation, and JSON/CSV/Markdown exports.
 - Bounded AWS SDK retries and classified API failures.
 - **FinOps Executive Governance snapshot combining spend, budgets, anomalies, forecast, findings, validation, and evidence status.**
-- **Executive dashboard accepts normalized billing CSV evidence and optional normalized governance JSON.**
-- Streamlit dashboard for interactive investigation and reporting.
-- **Production deployment readiness checks with environment validation, deterministic readiness reporting, structured redacted logging, and a container health check.**
-- **Hardened production container profile using a non-root user, dropped Linux capabilities, `no-new-privileges`, read-only root filesystem support, and Docker health checks.**
+- **Production deployment readiness checks, structured redacted logging, and container health checks.**
+- **Hardened production container profile using a non-root user, dropped capabilities, `no-new-privileges`, and read-only root filesystem support.**
 - **Production observability endpoints for liveness, readiness, and Prometheus-compatible in-process metrics.**
-- **Operational observability dashboard with runtime state, readiness checks, and metric visibility.**
+- **Security/compliance checks for secret patterns, Docker build context, read-only IAM actions, and dependency vulnerabilities.**
+- **FinOps alert lifecycle with deterministic deduplication and acknowledgement/resolution states.**
+- **Multi-account cost aggregation that preserves account boundaries.**
+- **Cost-allocation quality analysis that separates explicitly allocated spend from unallocated spend without inventing ownership or redistributing costs.**
 
 ## Architecture
 
 ```text
 AWS Billing / Cost Explorer / CSV
         │
-        ├── Anomaly Detection
-        ├── AWS Budgets
+        ├── Anomaly Detection / Budgets
         ├── EC2 / RDS / EBS / ALB
         └── CloudWatch Evidence
                  │
           Cost + Evidence Analytics
                  │
+        Account / Service Aggregation
+                 │
+        Allocation Quality Analysis
+                 │
         Review / Governance Signals
                  │
-        Executive Governance Snapshot
-                 │
-       Runtime / Health / Metrics
+       Runtime / Security / Alerting
                  │
             Human Decision
                  │
         Validate → Report → Export
 ```
 
+## Cost Allocation Quality
+
+`src/cost_allocation.py` provides deterministic analysis of whether normalized cost records contain explicit allocation evidence. Records are classified as `allocated` only when an allocation key is present; otherwise they remain `unallocated`.
+
+The model reports allocated/unallocated spend, record counts, allocation coverage, and unallocated spend grouped by account, service, region, or billing period. Missing allocation evidence is never converted into zero or silently redistributed.
+
+The dashboard page `dashboard/pages/14_Cost_Allocation_Quality.py` uses synthetic evidence for review. Production allocation requires approved billing, account, tagging, or other ownership evidence.
+
 ## Production Deployment Readiness
 
-The platform includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The production container exposes a lightweight operational health server with `GET /health`, `GET /readiness`, and `GET /metrics`. Streamlit remains available on port `8501`; operational health is served on port `8080`.
+The platform includes deterministic runtime configuration and readiness checks. The production container exposes Streamlit on `8501` and operational health on `8080` through `/health`, `/readiness`, and `/metrics`.
 
-The production container runs as an unprivileged `app` user. The production Compose profile can additionally enable a read-only root filesystem, drop all Linux capabilities, and enforce `no-new-privileges`. Temporary runtime state is isolated through a tmpfs mount.
+The production container runs as an unprivileged `app` user. The hardened Compose profile can enable a read-only root filesystem, drop all Linux capabilities, enforce `no-new-privileges`, and isolate temporary state through tmpfs.
 
-Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced by the deployment or observability layers.
+Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced.
 
 ## Production Observability
 
-The observability layer provides process-local operational signals without introducing a monitoring SaaS dependency. It records health/readiness requests, AWS operation status and duration when integrated through the shared helper, generates correlation IDs for future request instrumentation, classifies common AWS/dependency failures, and sanitizes secret-like error fields.
+The observability layer provides process-local operational signals, correlation IDs, AWS/dependency failure classification, and secret-like error sanitization. Metrics are ephemeral and are not billing evidence.
 
-`/health` is a liveness-style process check, `/readiness` evaluates the existing runtime readiness model, and `/metrics` exposes counters and duration summaries in Prometheus text format. These metrics are intentionally ephemeral and are not used as billing evidence.
+## Security & Compliance Hardening
+
+The repository security layer checks secret-like patterns, Docker build-context exclusions, observation-only IAM actions, and dependency vulnerabilities through `pip-audit`. These are preventive checks, not regulatory certification.
+
+## FinOps Alerting & Monitoring
+
+The alerting layer consumes existing cost and review signals and provides deterministic event identity, duplicate suppression, and `open → acknowledged → resolved` lifecycle states. Notification transport is separated from alert generation and AWS remediation is never executed.
+
+## Multi-Account FinOps Intelligence
+
+`src/multi_account_finops.py` keeps costs grouped by AWS account before calculating account totals, account/service totals, and per-account period comparisons. The dashboard uses clearly labeled synthetic evidence and does not assume cross-account credentials or role assumption.
 
 ## FinOps Executive Governance
 
-Milestone #15 provides a deterministic governance layer above the existing collectors. It combines already-available evidence into a single executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and an explicit evidence state.
-
-The dashboard can load normalized billing CSV data and optional JSON evidence for budgets, anomalies, findings, forecast, and validation. It does not invent missing data, divide service-level spend across resources without billing evidence, claim causality, or perform remediation.
+The governance layer combines already-available evidence into a deterministic executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and explicit evidence state. It does not invent missing evidence or perform remediation.
 
 ## Reporting & Validation
 
@@ -86,37 +99,16 @@ aws-cost-optimization/
 ├── PROJECT.md
 ├── IMPLEMENTATION.md
 ├── deployment/
-│   ├── Dockerfile
-│   ├── compose.production.yml
-│   ├── entrypoint.py
-│   ├── health_server.py
-│   └── .dockerignore
+├── security/
 ├── src/
-│   ├── cost_engine.py
-│   ├── aws_cost_explorer.py
-│   ├── aws_readonly.py
-│   ├── aws_resilience.py
-│   ├── aws_budgets.py
-│   ├── cost_anomaly.py
-│   ├── cloudwatch_ec2.py
-│   ├── cloudwatch_rds.py
-│   ├── cloudwatch_ebs.py
-│   ├── cloudwatch_alb.py
-│   ├── finops_exports.py
-│   ├── finops_governance.py
-│   ├── deployment_readiness.py
-│   └── observability.py
+│   ├── cost_allocation.py
+│   ├── multi_account_finops.py
+│   └── ...
 ├── dashboard/
 │   └── pages/
-│       ├── 2_EC2_Cost_Intelligence.py
-│       ├── 3_RDS_Cost_Intelligence.py
-│       ├── 4_EBS_Cost_Intelligence.py
-│       ├── 5_ALB_Data_Transfer_Intelligence.py
-│       ├── 6_FinOps_Reports_Validation.py
-│       ├── 7_Cost_Anomaly_Detection.py
-│       ├── 8_Budget_Governance.py
-│       ├── 9_FinOps_Executive_Governance.py
-│       └── 10_Production_Observability.py
+│       ├── 13_Multi_Account_FinOps.py
+│       ├── 14_Cost_Allocation_Quality.py
+│       └── ...
 ├── tests/
 └── data/
     └── sample-billing.csv
@@ -150,8 +142,6 @@ curl http://127.0.0.1:8080/health
 curl http://127.0.0.1:8080/readiness
 curl http://127.0.0.1:8080/metrics
 ```
-
-Review the production preflight in `IMPLEMENTATION.md` before enabling live AWS access.
 
 ## Three Documentation Files
 
