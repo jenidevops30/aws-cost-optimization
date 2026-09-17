@@ -50,13 +50,9 @@ The repository contains historical monthly billing data from December 2025 throu
 
 The executive governance layer aggregates existing normalized evidence instead of introducing duplicate AWS collection paths. `src/finops_governance.py` produces a deterministic `GovernanceSnapshot` containing latest/previous cost, MoM change, optional forecast, budget status, anomaly impact, findings, validation, and evidence state.
 
-The governance snapshot does not rank providers, authorize changes, claim anomaly causality, fabricate savings, or treat forecasts as guarantees.
-
 ## 8. Production Deployment Readiness — Milestone #16
 
 The deployment-readiness layer adds a deterministic pre-deployment gate around runtime configuration, data-directory availability, and the explicit read-only operating model. The production container uses Python 3.12, Streamlit on `8501`, and an operational health server on `8080`.
-
-The hardened image runs as an unprivileged `app` user. The production Compose profile additionally enables a read-only root filesystem, drops Linux capabilities, enforces `no-new-privileges`, and provides bounded temporary storage.
 
 ## 9. Production Observability — Milestone #18
 
@@ -74,36 +70,31 @@ The alerting layer consumes existing cost alerts and review findings, assigns de
 
 `src/multi_account_finops.py` defines `AccountCostRecord` and deterministic account totals, account × service totals, and per-account period/MoM calculations. The account boundary is preserved throughout aggregation.
 
-The dashboard page `dashboard/pages/13_Multi_Account_FinOps.py` demonstrates the model with synthetic evidence. It does not assume AWS Organizations access or cross-account role assumption.
-
 ## 13. Cost Allocation Quality — Milestone #22
 
-Cost allocation quality is a separate evidence layer above account/service aggregation. `src/cost_allocation.py` defines `AllocationRecord` and classifies a record as `allocated` only when an explicit `allocation_key` is present. Records without that evidence remain `unallocated`.
+`src/cost_allocation.py` defines `AllocationRecord` and classifies spend as allocated only when explicit allocation evidence is present. Missing evidence remains unallocated. The layer calculates allocation coverage and supported unallocated-spend groupings without inferring ownership.
 
-The layer calculates:
+## 14. Commitment Coverage Intelligence — Milestone #23
 
-- allocated and unallocated cost;
-- allocated and unallocated record counts;
-- allocation coverage percentage when total cost is non-zero;
-- unallocated spend grouped by account, service, region, or billing period.
+`src/finops_commitment.py` provides an evidence-preserving model for `reserved-instance` and `savings-plan` coverage. It separates eligible, covered, and uncovered spend and calculates coverage percentage only when eligible spend is non-zero.
 
-This design deliberately avoids guessing ownership from service names, account names, regions, resource counts, or other indirect signals. It also never redistributes unallocated spend across resources or teams.
+The model validates commitment type and spend boundaries, including rejecting negative values and covered spend greater than eligible spend. A zero eligible-spend record is represented as unavailable coverage rather than zero percent, preventing a misleading interpretation.
 
-`dashboard/pages/14_Cost_Allocation_Quality.py` provides a review interface using synthetic evidence. Production usage should supply approved billing allocation keys, tagging evidence, account ownership metadata, or another explicitly documented allocation source.
+`dashboard/pages/15_Commitment_Coverage.py` demonstrates the analysis with synthetic values. It is a review aid only and does not purchase, cancel, modify, or automatically recommend AWS commitments.
 
 ### Testing and failure safety
 
-`tests/test_cost_allocation.py` covers allocated/unallocated totals, coverage calculations, unallocated-dimension grouping, and invalid-dimension handling. The implementation raises an explicit error for unsupported dimensions rather than silently returning an incorrect grouping.
+Commitment tests cover deterministic coverage, zero eligible spend, aggregation by period and commitment type, invalid commitment types, invalid spend relationships, and dashboard safety. The objective is to fail explicitly on invalid evidence rather than weakening assertions to make CI green.
 
-## 14. AWS Integration Principle
+## 15. AWS Integration Principle
 
 The live AWS collector uses read-only observation APIs with bounded SDK retry behavior. The platform is decision-support, not autonomous infrastructure modification.
 
-## 15. Confidentiality
+## 16. Confidentiality
 
 Professional production evidence must be sanitized. Proprietary application code, Terraform, account identifiers, private addresses, credentials, customer information, and internal hostnames are not part of this public repository.
 
-## 16. Success Criteria
+## 17. Success Criteria
 
 A successful implementation can answer:
 
@@ -130,14 +121,16 @@ A successful implementation can answer:
 21. Can account/service and per-account period comparisons be calculated deterministically?
 22. Can the system distinguish explicitly allocated spend from unallocated spend without inventing ownership?
 23. Can unallocated spend be grouped by a supported dimension without silently changing its source evidence?
+24. Can eligible and covered commitment spend be separated without fabricating savings or coverage?
+25. Can zero eligible spend be represented as unavailable rather than misleading zero coverage?
 
-## 17. Non-Goals
+## 18. Non-Goals
 
 - Automatic resource termination, reboot, resizing, or modification.
 - Automatic infrastructure deployment.
 - Publishing confidential production configuration.
 - Claiming savings attribution without evidence.
-- Treating missing utilization or allocation evidence as zero.
+- Treating missing utilization, allocation, or commitment evidence as zero.
 - Retrying validation or permission failures through custom application loops.
 - Turning anomaly findings into automatic infrastructure changes.
 - Creating or modifying AWS Budgets or budget subscribers.
@@ -147,5 +140,5 @@ A successful implementation can answer:
 - Treating static security checks as proof of regulatory compliance.
 - Automatically upgrading dependencies or remediating security findings.
 - Assuming cross-account access or credentials that have not been explicitly configured and approved.
-- Treating synthetic multi-account or allocation dashboard data as production billing evidence.
-- Guessing cost ownership from indirect attributes.
+- Treating synthetic multi-account, allocation, or commitment data as production billing evidence.
+- Purchasing, canceling, or modifying Savings Plans or Reserved Instances automatically.
