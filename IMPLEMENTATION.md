@@ -265,7 +265,39 @@ No AWS credentials or webhook secrets belong in the source tree. Production noti
 
 The demo monitor is process-local and resets on application restart. It is not a durable incident-management system.
 
-## 16. Current Milestones
+## 16. Multi-Account FinOps Intelligence
+
+`src/multi_account_finops.py` adds an account-aware normalized model without introducing a second AWS collection path. `AccountCostRecord` keeps billing period, account ID/name, service, region, cost, and currency together.
+
+Core functions:
+
+```python
+from src.multi_account_finops import account_totals, account_service_totals, account_mom
+
+account_totals(records)
+account_service_totals(records)
+account_mom(records)
+```
+
+The aggregation layer preserves account boundaries and calculates:
+
+- total cost by account;
+- cost by account and service;
+- per-account period and month-over-month changes.
+
+`validate_account_id()` performs a basic 12-digit AWS account-ID shape check. It does not prove that an account exists or that the caller has access to it.
+
+The dashboard page `dashboard/pages/13_Multi_Account_FinOps.py` demonstrates the model with synthetic records. Production billing data should come from approved billing evidence. The page intentionally does not assume cross-account credentials or role assumption.
+
+### Testing
+
+`tests/test_multi_account_finops.py` verifies account aggregation, account/service boundaries, period-change calculations, and account-ID validation.
+
+### Safety
+
+This milestone introduces no AWS Organizations calls, STS role assumption, account changes, IAM changes, or resource mutations. Account identifiers and production billing data must be sanitized before publication.
+
+## 17. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -287,3 +319,4 @@ The demo monitor is process-local and resets on application restart. It is not a
 18. Production Observability — in progress.
 19. Production Security & Compliance Hardening — in progress.
 20. FinOps Alerting & Monitoring — in progress.
+21. Multi-Account FinOps Intelligence — in progress.
