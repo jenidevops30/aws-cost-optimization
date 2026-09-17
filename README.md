@@ -27,6 +27,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **Production observability endpoints for liveness, readiness, and Prometheus-compatible in-process metrics.**
 - **Operational observability dashboard with runtime state, readiness checks, and metric visibility.**
 - **Security and compliance checks for secret patterns, Docker build context, read-only IAM actions, and dependency vulnerabilities.**
+- **FinOps alert lifecycle with deterministic deduplication, acknowledgement/resolution states, and transport-neutral notification adapters.**
 
 ## Architecture
 
@@ -47,6 +48,8 @@ AWS Billing / Cost Explorer / CSV
        Runtime / Health / Metrics
                  │
         Security / Compliance Gates
+                 │
+          Alerting / Deduplication
                  │
             Human Decision
                  │
@@ -78,6 +81,12 @@ The security layer adds repository-level controls before release:
 - A Streamlit security/compliance review page that reports control status and explicitly avoids claiming regulatory certification.
 
 These controls are preventive checks, not a substitute for organization-specific compliance programs, host security, network controls, or runtime cloud security review.
+
+## FinOps Alerting & Monitoring
+
+The alerting layer turns existing cost and review signals into an explicit, analysis-only alert lifecycle. `src/alert_monitoring.py` provides deterministic event identity, duplicate suppression, and `open → acknowledged → resolved` state transitions. `src/alert_notifications.py` provides dependency-free console output and a transport-neutral webhook adapter.
+
+The alert engine does not execute AWS remediation. Notification transports must be explicitly configured by an operator, and secrets such as webhook credentials must remain outside source code.
 
 ## FinOps Executive Governance
 
@@ -123,7 +132,9 @@ aws-cost-optimization/
 │   ├── finops_exports.py
 │   ├── finops_governance.py
 │   ├── deployment_readiness.py
-│   └── observability.py
+│   ├── observability.py
+│   ├── alert_monitoring.py
+│   └── alert_notifications.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
@@ -135,7 +146,8 @@ aws-cost-optimization/
 │       ├── 8_Budget_Governance.py
 │       ├── 9_FinOps_Executive_Governance.py
 │       ├── 10_Production_Observability.py
-│       └── 11_Security_Compliance.py
+│       ├── 11_Security_Compliance.py
+│       └── 12_FinOps_Alerting_Monitoring.py
 ├── tests/
 └── data/
     └── sample-billing.csv
