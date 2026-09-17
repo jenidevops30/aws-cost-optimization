@@ -154,3 +154,19 @@ A successful implementation can answer:
 - Treating process-local metrics as durable monitoring or billing history.
 - Treating static security checks as proof of regulatory compliance.
 - Automatically upgrading dependencies or remediating security findings.
+
+## 15. FinOps Alerting & Monitoring — Next Milestone
+
+The alerting layer consumes existing cost alerts and review findings without creating another AWS collection path. `src/alert_monitoring.py` gives each event a deterministic identity and suppresses repeated identical events in the process-local lifecycle store.
+
+Alert state is explicit:
+
+```text
+OPEN → ACKNOWLEDGED → RESOLVED
+```
+
+`src/alert_notifications.py` separates alert generation from notification transport. The console adapter is dependency-free for local/CI diagnostics, while the webhook adapter accepts an injected sender so the application does not embed HTTP credentials or provider-specific secrets.
+
+The Streamlit page `dashboard/pages/12_FinOps_Alerting_Monitoring.py` demonstrates the lifecycle and clearly labels the feature as analysis-only. Production notification delivery requires an operator-approved transport and external secret management.
+
+The alerting milestone does not stop, resize, reboot, terminate, delete, create, or modify AWS resources. Deduplication is process-local and is not a substitute for a durable alert store or enterprise incident-management platform.
