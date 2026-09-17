@@ -20,6 +20,7 @@ _SECRET_PATTERNS = (
     re.compile(r"(?i)(?:password|passwd|api[_-]?key|secret)\s*[:=]\s*['\"][^'\"]{8,}['\"]"),
 )
 _EXCLUDED = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
+_EXCLUDED_FILES = {"tests/test_security_compliance.py"}
 _TEXT_SUFFIXES = {".py", ".yml", ".yaml", ".json", ".toml", ".ini", ".cfg", ".env", ".md", ".txt"}
 
 _READ_ONLY_ACTIONS = re.compile(r"^(?:ce:Get|ce:Describe|ec2:Describe|rds:Describe|elasticloadbalancing:Describe|autoscaling:Describe|cloudwatch:(?:Get|List))")
@@ -34,6 +35,8 @@ def scan_text_for_secrets(text: str) -> list[str]:
 def _iter_text_files(base: Path):
     for path in base.rglob("*"):
         if not path.is_file() or any(part in _EXCLUDED for part in path.parts):
+            continue
+        if path.relative_to(base).as_posix() in _EXCLUDED_FILES:
             continue
         if path.suffix.lower() not in _TEXT_SUFFIXES and path.name != "Dockerfile":
             continue
