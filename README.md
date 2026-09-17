@@ -28,6 +28,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **Operational observability dashboard with runtime state, readiness checks, and metric visibility.**
 - **Security and compliance checks for secret patterns, Docker build context, read-only IAM actions, and dependency vulnerabilities.**
 - **FinOps alert lifecycle with deterministic deduplication, acknowledgement/resolution states, and transport-neutral notification adapters.**
+- **Multi-account cost aggregation that preserves account boundaries for totals, service breakdowns, and period comparisons.**
 
 ## Architecture
 
@@ -40,6 +41,8 @@ AWS Billing / Cost Explorer / CSV
         └── CloudWatch Evidence
                  │
           Cost + Evidence Analytics
+                 │
+        Account / Service Aggregation
                  │
         Review / Governance Signals
                  │
@@ -88,6 +91,14 @@ The alerting layer turns existing cost and review signals into an explicit, anal
 
 The alert engine does not execute AWS remediation. Notification transports must be explicitly configured by an operator, and secrets such as webhook credentials must remain outside source code.
 
+## Multi-Account FinOps Intelligence
+
+`src/multi_account_finops.py` provides a normalized account-aware analytics model. It keeps costs grouped by AWS account before calculating account totals, account/service totals, and per-account period comparisons. This prevents different accounts from being silently combined when reviewing organizational spend.
+
+The dashboard page `dashboard/pages/13_Multi_Account_FinOps.py` demonstrates account-level and account/service-level views using normalized evidence. It does not assume cross-account credentials, implement role assumption, or perform AWS mutations.
+
+Production integrations should provide approved account metadata and billing evidence through the organization's existing AWS billing or read-only collection controls. Account identifiers and production billing data must be sanitized before public publication.
+
 ## FinOps Executive Governance
 
 Milestone #15 provides a deterministic governance layer above the existing collectors. It combines already-available evidence into a single executive snapshot containing latest spend, month-over-month change, forecast evidence, budget statuses, anomaly count/impact, finding count, validation status, and an explicit evidence state.
@@ -134,7 +145,8 @@ aws-cost-optimization/
 │   ├── deployment_readiness.py
 │   ├── observability.py
 │   ├── alert_monitoring.py
-│   └── alert_notifications.py
+│   ├── alert_notifications.py
+│   └── multi_account_finops.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
@@ -147,7 +159,8 @@ aws-cost-optimization/
 │       ├── 9_FinOps_Executive_Governance.py
 │       ├── 10_Production_Observability.py
 │       ├── 11_Security_Compliance.py
-│       └── 12_FinOps_Alerting_Monitoring.py
+│       ├── 12_FinOps_Alerting_Monitoring.py
+│       └── 13_Multi_Account_FinOps.py
 ├── tests/
 └── data/
     └── sample-billing.csv
