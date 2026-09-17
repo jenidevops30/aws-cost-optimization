@@ -16,7 +16,7 @@ class ComplianceCheck:
 _SECRET_PATTERNS = (
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     re.compile(r"(?i)aws_secret_access_key\s*[:=]\s*['\"]?[^\s'\"]+"),
-    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE\s+KEY-----"),
     re.compile(r"(?i)(?:password|passwd|api[_-]?key|secret)\s*[:=]\s*['\"][^'\"]{8,}['\"]"),
 )
 _EXCLUDED = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
