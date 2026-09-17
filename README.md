@@ -22,6 +22,7 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - **FinOps alert lifecycle with deterministic deduplication and acknowledgement/resolution states.**
 - **Multi-account cost aggregation that preserves account boundaries.**
 - **Cost-allocation quality analysis that separates explicitly allocated spend from unallocated spend without inventing ownership or redistributing costs.**
+- **Commitment coverage analysis for Savings Plans and Reserved Instances using supplied eligible/covered-spend evidence.**
 
 ## Architecture
 
@@ -34,13 +35,11 @@ AWS Billing / Cost Explorer / CSV
                  │
           Cost + Evidence Analytics
                  │
-        Account / Service Aggregation
+        Account / Allocation Analysis
                  │
-        Allocation Quality Analysis
+       Commitment Coverage Analysis
                  │
         Review / Governance Signals
-                 │
-       Runtime / Security / Alerting
                  │
             Human Decision
                  │
@@ -54,6 +53,12 @@ AWS Billing / Cost Explorer / CSV
 The model reports allocated/unallocated spend, record counts, allocation coverage, and unallocated spend grouped by account, service, region, or billing period. Missing allocation evidence is never converted into zero or silently redistributed.
 
 The dashboard page `dashboard/pages/14_Cost_Allocation_Quality.py` uses synthetic evidence for review. Production allocation requires approved billing, account, tagging, or other ownership evidence.
+
+## Commitment Coverage Intelligence
+
+`src/finops_commitment.py` provides deterministic coverage calculations for `reserved-instance` and `savings-plan` evidence. It separates eligible, covered, and uncovered spend and returns unavailable coverage when eligible spend is zero.
+
+The dashboard page `dashboard/pages/15_Commitment_Coverage.py` uses synthetic values only. The platform does not purchase, cancel, modify, or recommend a commitment without appropriate evidence.
 
 ## Production Deployment Readiness
 
@@ -101,13 +106,14 @@ aws-cost-optimization/
 ├── deployment/
 ├── security/
 ├── src/
+│   ├── finops_commitment.py
 │   ├── cost_allocation.py
 │   ├── multi_account_finops.py
 │   └── ...
 ├── dashboard/
 │   └── pages/
-│       ├── 13_Multi_Account_FinOps.py
 │       ├── 14_Cost_Allocation_Quality.py
+│       ├── 15_Commitment_Coverage.py
 │       └── ...
 ├── tests/
 └── data/
