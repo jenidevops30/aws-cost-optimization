@@ -1,6 +1,6 @@
 # AWS Billing & Cost Optimization Platform
 
-A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, producing evidence-based optimization reviews, governance signals, and exportable reports.
+A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing cost trends and drivers, detecting anomalies, correlating spend with infrastructure and utilization evidence, producing evidence-based optimization reviews, governance signals, and auditable reports.
 
 > **Scope:** Decision-support only. It does not automatically modify AWS resources. Production evidence must be sanitized before publication.
 
@@ -24,6 +24,8 @@ A read-only FinOps/DevOps platform for collecting AWS billing data, analyzing co
 - Streamlit dashboard for interactive investigation and reporting.
 - **Production deployment readiness checks with environment validation, deterministic readiness reporting, structured redacted logging, and a container health check.**
 - **Hardened production container profile using a non-root user, dropped Linux capabilities, `no-new-privileges`, read-only root filesystem support, and Docker health checks.**
+- **Production observability endpoints for liveness, readiness, and Prometheus-compatible in-process metrics.**
+- **Operational observability dashboard with runtime state, readiness checks, and metric visibility.**
 
 ## Architecture
 
@@ -41,7 +43,7 @@ AWS Billing / Cost Explorer / CSV
                  │
         Executive Governance Snapshot
                  │
-          Runtime / Readiness Checks
+       Runtime / Health / Metrics
                  │
             Human Decision
                  │
@@ -50,11 +52,17 @@ AWS Billing / Cost Explorer / CSV
 
 ## Production Deployment Readiness
 
-The platform includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The dashboard container includes a health check against Streamlit's health endpoint and excludes common secret/configuration files from the Docker build context.
+The platform includes a deployment-readiness layer that validates runtime configuration, checks the configured data directory, and explicitly records the analysis-only safety model. The production container exposes a lightweight operational health server with `GET /health`, `GET /readiness`, and `GET /metrics`. Streamlit remains available on port `8501`; operational health is served on port `8080`.
 
 The production container runs as an unprivileged `app` user. The production Compose profile can additionally enable a read-only root filesystem, drop all Linux capabilities, and enforce `no-new-privileges`. Temporary runtime state is isolated through a tmpfs mount.
 
-Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced by the deployment layer.
+Live AWS credentials continue to use the standard boto3 credential chain. No AWS mutation capability is introduced by the deployment or observability layers.
+
+## Production Observability
+
+The observability layer provides process-local operational signals without introducing a monitoring SaaS dependency. It records health/readiness requests, AWS operation status and duration when integrated through the shared helper, generates correlation IDs for future request instrumentation, classifies common AWS/dependency failures, and sanitizes secret-like error fields.
+
+`/health` is a liveness-style process check, `/readiness` evaluates the existing runtime readiness model, and `/metrics` exposes counters and duration summaries in Prometheus text format. These metrics are intentionally ephemeral and are not used as billing evidence.
 
 ## FinOps Executive Governance
 
@@ -80,6 +88,8 @@ aws-cost-optimization/
 ├── deployment/
 │   ├── Dockerfile
 │   ├── compose.production.yml
+│   ├── entrypoint.py
+│   ├── health_server.py
 │   └── .dockerignore
 ├── src/
 │   ├── cost_engine.py
@@ -94,7 +104,8 @@ aws-cost-optimization/
 │   ├── cloudwatch_alb.py
 │   ├── finops_exports.py
 │   ├── finops_governance.py
-│   └── deployment_readiness.py
+│   ├── deployment_readiness.py
+│   └── observability.py
 ├── dashboard/
 │   └── pages/
 │       ├── 2_EC2_Cost_Intelligence.py
@@ -104,7 +115,8 @@ aws-cost-optimization/
 │       ├── 6_FinOps_Reports_Validation.py
 │       ├── 7_Cost_Anomaly_Detection.py
 │       ├── 8_Budget_Governance.py
-│       └── 9_FinOps_Executive_Governance.py
+│       ├── 9_FinOps_Executive_Governance.py
+│       └── 10_Production_Observability.py
 ├── tests/
 └── data/
     └── sample-billing.csv
@@ -122,13 +134,21 @@ For the production container:
 
 ```bash
 docker build -f deployment/Dockerfile -t aws-finops-control-center .
-docker run --rm -p 8501:8501 aws-finops-control-center
+docker run --rm -p 8501:8501 -p 8080:8080 aws-finops-control-center
 ```
 
 For the hardened Compose profile:
 
 ```bash
 docker compose -f deployment/compose.production.yml up -d --build
+```
+
+Operational checks:
+
+```bash
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/readiness
+curl http://127.0.0.1:8080/metrics
 ```
 
 Review the production preflight in `IMPLEMENTATION.md` before enabling live AWS access.
