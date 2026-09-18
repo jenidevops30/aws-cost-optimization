@@ -160,3 +160,10 @@ The dashboard uses synthetic values only.
 The unit economics layer relates observed cost to an explicitly supplied workload volume, such as requests or jobs. It reports cost per unit only when the unit denominator is available and preserves zero-volume evidence as unavailable.
 
 This is descriptive operational evidence. It does not infer workload ownership, fabricate workload metrics, forecast savings, or recommend an optimization action. Production use requires an approved workload metric source.
+
+
+## 18. FinOps Unit Economics Correlation — Milestone #27
+
+The correlation layer preserves cost, workload volume, and an optional supporting operational signal such as an approved utilization metric. It reports whether that supporting evidence is available without inferring a relationship when the signal is missing.
+
+The layer is intentionally descriptive. Correlation evidence does not prove causality, ownership, or savings opportunity. Production signals must come from an approved telemetry source.
