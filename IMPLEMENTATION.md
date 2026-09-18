@@ -232,3 +232,30 @@ unit_cost = cost_per_unit(record)
 ```
 
 The dashboard uses synthetic evidence only. Unit economics must not be treated as a savings guarantee; workload volume must come from an approved evidence source.
+
+
+## 15. FinOps Unit Economics Correlation
+
+`src/finops_unit_economics_correlation.py` defines `UnitCostCorrelationEvidence` and `correlation_rows()`.
+
+The model preserves an optional supporting signal and its explicit name. Missing signals remain `None` with `evidence_status=unavailable`. Cost per unit also remains unavailable when workload volume is zero.
+
+Example:
+
+```python
+from src.finops_unit_economics_correlation import UnitCostCorrelationEvidence, correlation_rows
+
+record = UnitCostCorrelationEvidence(
+    period="2026-08",
+    workload="production-api",
+    unit_name="requests",
+    cost=132.0,
+    units=1_500_000,
+    supporting_signal=71.0,
+    signal_name="avg_cpu_pct",
+)
+
+row = correlation_rows([record])[0]
+```
+
+The supporting signal is evidence to investigate alongside unit economics, not proof of causality or a savings estimate.
