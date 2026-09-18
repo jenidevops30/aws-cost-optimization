@@ -261,3 +261,7 @@ DevOps Engineer | AWS | Cloud Infrastructure | FinOps
 ## ⚠️ Disclaimer
 
 Production billing information must be sanitized before publication. Never commit AWS account IDs, credentials, private keys, private IPs, customer information, internal hostnames, or proprietary infrastructure code.
+
+
+### Budget Governance
+Budget thresholds are treated as governance evidence for cost review and alerting; this project does not automatically change AWS resources.
