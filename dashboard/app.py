@@ -20,7 +20,7 @@ st.markdown("""
 .block-container {padding-top:1.5rem; padding-bottom:2rem; max-width:1500px;}
 .hero {padding:1.4rem 1.6rem; border:1px solid rgba(128,128,128,.25); border-radius:16px; margin-bottom:1rem;}
 .hero h1 {margin:0; font-size:2rem}.hero p {margin:.25rem 0 0; opacity:.7}
-.status {padding:.65rem 1rem; border-radius:10px; border:1px solid rgba(128,128,128,.25); margin-bottom:1rem;}
+.status {padding:.65rem 1rem; border:1px solid rgba(128,128,128,.25); border-radius:10px; margin-bottom:1rem;}
 </style>
 """, unsafe_allow_html=True)
 
