@@ -186,3 +186,10 @@ The dashboard `dashboard/pages/20_FinOps_Unit_Economics_Correlation.py` uses syn
 The unit-economics trend layer compares observed cost-per-unit values across periods while preserving unavailable volume denominators. It reports descriptive percentage changes only; it does not claim causality or forecast savings.
 
 The dashboard `dashboard/pages/19_FinOps_Unit_Economics_Trends.py` uses synthetic evidence.
+
+
+## FinOps Unit Economics Quality
+
+The unit-economics quality layer validates whether workload volume has an explicit evidence source and preserves zero-volume or missing-source states as unavailable. It provides deterministic review flags rather than savings estimates or optimization recommendations.
+
+The dashboard `dashboard/pages/21_FinOps_Unit_Economics_Quality.py` uses synthetic evidence.

@@ -279,3 +279,12 @@ change = unit_cost_change(
 ```
 
 The dashboard uses synthetic evidence only. Trend changes must be correlated with approved workload, infrastructure, and operational evidence before causal conclusions are made.
+
+
+## 17. FinOps Unit Economics Quality
+
+`src/finops_unit_economics_quality.py` defines `UnitEconomicsQualityEvidence`, `quality_rows()`, and `quality_flags()`.
+
+Available unit volume requires an explicit source. Zero volume remains unavailable. Flags include `no-evidence`, `zero-volume-evidence`, `missing-volume-source`, and `zero-cost-evidence`.
+
+The dashboard is synthetic and analysis-only. Production volume must come from an approved workload metric source.
