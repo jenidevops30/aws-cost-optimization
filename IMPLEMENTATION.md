@@ -207,3 +207,28 @@ The dashboard `17_Commitment_Trend_Correlation.py` is synthetic and analysis-onl
 - Low utilization is an investigation signal, not proof that a commitment should be changed.
 - No savings amount is derived from a utilization percentage.
 - Synthetic dashboard values are not production AWS billing evidence.
+
+
+## 13. FinOps Unit Economics
+
+`src/finops_unit_economics.py` defines `UnitEconomicsEvidence` and deterministic cost-per-unit aggregation.
+
+`cost_per_unit()` returns `None` when units are zero. `aggregate_unit_economics()` preserves period, workload, and unit dimensions. `unit_economics_review_flags()` identifies unavailable unit volume and zero-cost review cases.
+
+Example:
+
+```python
+from src.finops_unit_economics import UnitEconomicsEvidence, cost_per_unit
+
+record = UnitEconomicsEvidence(
+    period="2026-08",
+    workload="production-api",
+    cost=132.0,
+    units=1_500_000,
+    unit_name="requests",
+)
+
+unit_cost = cost_per_unit(record)
+```
+
+The dashboard uses synthetic evidence only. Unit economics must not be treated as a savings guarantee; workload volume must come from an approved evidence source.
