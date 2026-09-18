@@ -15,16 +15,12 @@ st.set_page_config(page_title="AWS FinOps Control Center", page_icon="☁️", l
 from theme import inject_theme
 inject_theme(st)
 
-st.markdown("""
-<style>
-.block-container {padding-top:1.5rem; padding-bottom:2rem; max-width:1500px;}
-.hero {padding:1.4rem 1.6rem; border:1px solid rgba(128,128,128,.25); border-radius:16px; margin-bottom:1rem;}
-.hero h1 {margin:0; font-size:2rem}.hero p {margin:.25rem 0 0; opacity:.7}
-.status {padding:.65rem 1rem; border:1px solid rgba(128,128,128,.25); border-radius:10px; margin-bottom:1rem;}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="hero"><h1>☁️ AWS FinOps Control Center</h1><p>Executive cost visibility, anomaly detection, forecasting and savings simulation</p></div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="finops-hero"><div class="eyebrow">AWS FinOps Platform</div>'
+    '<h1>☁️ FinOps Control Center</h1>'
+    '<p>Executive cost visibility, anomaly detection, forecasting and savings simulation</p></div>',
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Control Center")
@@ -90,7 +86,11 @@ if loaded is None:
     st.stop()
 df, source_label = loaded
 
-st.markdown(f'<div class="status">Source: <b>{source_label}</b> &nbsp; | &nbsp; Mode: <b>{mode}</b> &nbsp; | &nbsp; Records: <b>{len(df):,}</b></div>', unsafe_allow_html=True)
+st.markdown(
+    f'<div class="status-strip">Source: <b>{source_label}</b> &nbsp; | &nbsp; '
+    f'Mode: <b>{mode}</b> &nbsp; | &nbsp; Records: <b>{len(df):,}</b></div>',
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Filters")
@@ -112,7 +112,7 @@ mom_pct = ((latest - previous) / previous * 100) if previous else 0.0
 tab_overview, tab_services, tab_alerts, tab_forecast, tab_infra, tab_evidence = st.tabs(["Overview", "Services", "Alerts", "Forecast & Savings", "Infrastructure", "Evidence"])
 
 with tab_overview:
-    st.subheader("Executive overview")
+    st.markdown('<div class="section-title">Executive overview</div>', unsafe_allow_html=True)
     c1,c2,c3,c4,c5 = st.columns(5)
     c1.metric("Latest spend", f"${latest:,.2f}", f"{mom_pct:+.1f}% MoM")
     c2.metric("Analyzed spend", f"${filtered['cost'].sum():,.2f}")
