@@ -200,6 +200,6 @@ The dashboard `dashboard/pages/21_FinOps_Unit_Economics_Quality.py` uses synthet
 Adds descriptive validation of observed unit cost against forecast evidence, including forecast error and mean absolute error. Missing observations remain unavailable.
 
 
-## FinOps Data Quality & Reconciliation
+## FinOps Unit Economics Governance
 
-Adds explicit source-to-source reconciliation with configurable tolerances. Mismatches are surfaced as data-quality review signals without assuming which source is authoritative.
+Adds a governance view that combines observed-versus-forecast validation and anomaly-review signals while preserving unavailable evidence explicitly.

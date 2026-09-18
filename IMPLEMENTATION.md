@@ -295,6 +295,6 @@ The dashboard is synthetic and analysis-only. Production volume must come from a
 `src/finops_unit_economics_forecast_validation.py` compares observed and forecast unit costs. `mean_absolute_error()` returns `None` when no complete observations exist. Missing values remain unavailable rather than zero.
 
 
-## 24. FinOps Data Quality & Reconciliation
+## 21. FinOps Unit Economics Governance
 
-`src/finops_data_quality_reconciliation.py` calculates source differences, optional relative differences, and matched/mismatch status. A zero reference total produces an unavailable relative difference rather than a fabricated percentage.
+`src/finops_unit_economics_governance.py` combines forecast error, anomaly review, and evidence availability. `governance_summary()` returns deterministic counts for operational review.
