@@ -183,8 +183,6 @@ The quality layer checks whether unit-economics records have valid dimensions, n
 Quality flags are evidence-review signals only. They do not establish workload ownership, causality, savings, or an optimization action.
 
 
-## 22. FinOps Unit Economics Forecast
+## 23. FinOps Unit Economics Forecast Validation
 
-This milestone extends unit economics with a simple historical-mean next-period unit-cost forecast. Forecast availability depends on valid non-zero unit volumes. Confidence is intentionally low with fewer than three observations and medium with three or more observations.
-
-The forecast is descriptive, not a guarantee and not a savings estimate.
+This milestone validates forecast observations using explicit forecast error and mean absolute error. It evaluates historical evidence only and does not guarantee future accuracy or imply causality.
