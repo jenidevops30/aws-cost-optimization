@@ -17,6 +17,8 @@ Inventory / CloudWatch Correlation
         ↓
 Account / Allocation Analysis
         ↓
+Commitment Coverage Analysis
+        ↓
 Review / Governance Signals
         ↓
 Human Review
@@ -70,51 +72,41 @@ The alerting layer provides deterministic event identity and `OPEN → ACKNOWLED
 
 ## 10. Cost Allocation Quality
 
-`src/cost_allocation.py` is an evidence-preserving layer for organizational cost allocation review.
+`src/cost_allocation.py` is an evidence-preserving layer for organizational cost allocation review. Explicit allocation keys classify spend as allocated; missing allocation evidence remains unallocated.
 
-### Data model
+## 11. Commitment Coverage Intelligence
+
+`src/finops_commitment.py` defines `CommitmentEvidence` for `reserved-instance` and `savings-plan` evidence.
 
 ```python
-from src.cost_allocation import AllocationRecord
+from src.finops_commitment import CommitmentEvidence, coverage_percent
 
-record = AllocationRecord(
-    billing_period="2026-08",
-    account_id="111111111111",
-    service="EC2",
-    cost=120.0,
-    region="ap-south-1",
-    allocation_key="prod",
+evidence = CommitmentEvidence(
+    period="2026-08",
+    commitment_type="savings-plan",
+    service="Amazon EC2",
+    eligible_spend=100.0,
+    covered_spend=75.0,
 )
+
+coverage = coverage_percent(evidence)
 ```
 
-An explicit, non-empty `allocation_key` is required for the record to be classified as `allocated`. A missing key produces `unallocated`; no ownership is inferred.
+Coverage is calculated as covered spend divided by eligible spend. If eligible spend is zero, coverage is `None`, not zero. Invalid commitment types, negative spend, and covered spend greater than eligible spend raise `ValueError`.
 
-### Core analysis
+`aggregate_commitment_coverage()` groups evidence by billing period and commitment type and returns eligible, covered, uncovered, and coverage percentage values. `commitment_review_flags()` provides deterministic review signals such as `no-eligible-spend`, `no-covered-eligible-spend`, and `low-coverage-review`.
 
-```python
-from src.cost_allocation import allocation_quality, unallocated_by_dimension
-
-quality = allocation_quality(records)
-unallocated = unallocated_by_dimension(records, "service")
-```
-
-`allocation_quality()` returns record counts, allocated/unallocated cost, total cost, and allocation coverage percentage. Coverage is unavailable when total cost is zero rather than being represented as a misleading percentage.
-
-`unallocated_by_dimension()` supports only `service`, `account_id`, `region`, and `billing_period`. Unsupported dimensions raise `ValueError` so a caller cannot silently obtain an invalid grouping.
+`dashboard/pages/15_Commitment_Coverage.py` uses synthetic evidence and clearly labels it. It is not a purchase optimizer and does not execute AWS commitment changes.
 
 ### Evidence rules
 
-- Allocated spend is based only on an explicit allocation key.
-- Unallocated spend remains unallocated.
-- No service-level spend is divided among teams or resources without evidence.
-- Account, service, region, and billing period are descriptive grouping dimensions, not ownership proof.
-- Synthetic dashboard records must remain clearly separated from production billing evidence.
+- Eligible and covered spend must be supplied by an approved evidence source.
+- The platform does not invent commitment utilization or savings.
+- Coverage is not a savings estimate.
+- Zero eligible spend is unavailable coverage, not evidence of zero utilization.
+- Synthetic dashboard values must never be presented as production AWS billing data.
 
-### Dashboard
-
-`dashboard/pages/14_Cost_Allocation_Quality.py` provides total allocation coverage and unallocated-spend breakdowns using synthetic evidence. Production data should come from approved billing allocation keys, tagging evidence, account ownership metadata, or another documented source.
-
-## 11. Production Preflight
+## 12. Production Preflight
 
 Before a production release:
 
@@ -128,9 +120,9 @@ Before a production release:
 8. Open the dashboard and validate Demo/CSV mode first.
 9. Enable live mode only after AWS credentials and read-only permissions are confirmed.
 10. Confirm no credentials, `.env` files, private keys, or confidential evidence are present in the build context.
-11. Review allocation quality before using cost data for organizational chargeback/showback decisions.
+11. Review allocation and commitment coverage evidence before organizational decisions.
 
-## 12. Testing
+## 13. Testing
 
 Run:
 
@@ -138,21 +130,21 @@ Run:
 python -m pytest -q
 ```
 
-CI covers Python 3.11 and 3.12, compilation, the full pytest suite, security checks, dependency audit, and the hardened container smoke path. The allocation-quality tests cover allocated/unallocated totals, coverage calculations, supported dimension grouping, and invalid-dimension failure behavior.
+CI covers Python 3.11 and 3.12, compilation, the full pytest suite, security checks, dependency audit, and the hardened container smoke path. Commitment tests cover deterministic calculations, zero eligible spend, aggregation, invalid types, invalid spend relationships, and dashboard safety.
 
-If CI reports a failure, fix the underlying test or implementation issue and rerun CI before treating the PR as review-ready. Do not suppress failures or weaken assertions solely to obtain a green build.
+If CI reports a failure, fix the underlying implementation or test issue and rerun CI. Do not suppress failures or weaken assertions solely to obtain a green build.
 
-## 13. Safety
+## 14. Safety
 
 Never store AWS access keys in source code. Use the standard boto3 credential chain or IAM roles. AWS integration is observation-only and contains no resource mutation actions. Structured logging redacts common secret-like fields. Dashboard errors must not expose raw AWS responses or sensitive service details.
 
-Cost allocation is also analysis-only: it does not create tags, modify accounts, change billing configuration, or perform chargeback actions.
+Commitment coverage is analysis-only: it does not purchase, cancel, modify, or resize Savings Plans or Reserved Instances.
 
-## 14. Three Documentation Files
+## 15. Three Documentation Files
 
 The project maintains exactly three canonical Markdown documents: `README.md`, `PROJECT.md`, and `IMPLEMENTATION.md`.
 
-## 15. Current Milestones
+## 16. Current Milestones
 
 1. CSV ingestion and normalization — complete.
 2. Cost-analysis API/CLI — complete.
@@ -176,3 +168,4 @@ The project maintains exactly three canonical Markdown documents: `README.md`, `
 20. FinOps Alerting & Monitoring — in progress.
 21. Multi-Account FinOps Intelligence — in progress.
 22. Cost Allocation Quality — in progress.
+23. Commitment Coverage Intelligence — in progress.
