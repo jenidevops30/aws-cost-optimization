@@ -1,0 +1,1 @@
+from __future__ import annotations\n\ndef insight_card(st, label: str, value: str, note: str) -> None:\n    st.markdown(\n        f'<div class="insight"><div class="insight-label">{label}</div>'\n        f'<div class="insight-value">{value}</div><div class="insight-note">{note}</div></div>',\n        unsafe_allow_html=True,\n    )\n
