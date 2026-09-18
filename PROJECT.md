@@ -191,3 +191,7 @@ This milestone validates forecast observations using explicit forecast error and
 ## 25. FinOps Evidence Freshness & Lineage
 
 This milestone adds evidence lineage metadata so dashboards and governance workflows can distinguish available datasets from incomplete or empty inputs. It records source and observation time without inferring ownership or causality.
+
+
+### Budget Governance
+Budget governance is documented as an evidence and review control. The platform does not automatically change AWS resources when budget-related signals are detected.
