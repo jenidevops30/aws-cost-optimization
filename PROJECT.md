@@ -142,3 +142,14 @@ A successful implementation can answer:
 - Assuming cross-account access or credentials that have not been explicitly configured and approved.
 - Treating synthetic multi-account, allocation, or commitment data as production billing evidence.
 - Purchasing, canceling, or modifying Savings Plans or Reserved Instances automatically.
+
+
+## 15. Commitment Trend & Coverage/Utilization Correlation — Milestone #24
+
+`src/finops_commitment_trend.py` adds a period-aware evidence model containing eligible spend, covered spend, committed value, and utilized value for Savings Plans and Reserved Instances.
+
+The layer calculates coverage and utilization independently, reports uncovered spend and unused commitment value, and calculates a percentage-point gap only when both denominators are non-zero. This prevents a zero or missing denominator from being interpreted as a real utilization or coverage result.
+
+Review flags include low coverage, low utilization, unavailable evidence, and a coverage/utilization mismatch where coverage is at least 50% but utilization is below 50%. These are investigation signals, not purchase recommendations or savings estimates.
+
+The dashboard uses synthetic values only.

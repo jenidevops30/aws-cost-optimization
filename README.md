@@ -158,3 +158,10 @@ curl http://127.0.0.1:8080/metrics
 ## Disclaimer
 
 Production billing information must be sanitized before publication. Never commit AWS account IDs, credentials, private IPs, customer information, internal hostnames, or proprietary infrastructure code.
+
+
+## Commitment Trend & Correlation Intelligence
+
+`src/finops_commitment_trend.py` compares commitment coverage and utilization across periods while preserving unavailable denominators. A coverage/utilization gap is reported only when both measures have valid evidence.
+
+The dashboard page `dashboard/pages/17_Commitment_Trend_Correlation.py` uses synthetic evidence and provides review flags such as low coverage, low utilization, and a coverage/utilization mismatch. It does not estimate savings or perform commitment changes.
