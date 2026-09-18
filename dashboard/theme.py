@@ -3,7 +3,7 @@
 def inject_theme(st):
     st.markdown("""
     <style>
-    .stApp { background: #f6f8fb; }
+    .stApp { background: #f6f8fb; }\n    @media (max-width: 900px) { .block-container { padding: 1rem .75rem 2rem; } .finops-hero h1 { font-size: 1.65rem; } [data-testid="stMetric"] { margin-bottom: .5rem; } }
     .block-container { max-width: 1500px; padding: 1.5rem 2rem 3rem; }
     [data-testid="stSidebar"] { border-right: 1px solid #e5e7eb; }
     [data-testid="stMetric"] { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
