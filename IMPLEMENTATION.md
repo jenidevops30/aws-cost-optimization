@@ -293,3 +293,8 @@ The dashboard is synthetic and analysis-only. Production volume must come from a
 ## 20. FinOps Unit Economics Forecast Validation
 
 `src/finops_unit_economics_forecast_validation.py` compares observed and forecast unit costs. `mean_absolute_error()` returns `None` when no complete observations exist. Missing values remain unavailable rather than zero.
+
+
+## 23. FinOps Evidence Freshness Thresholds
+
+`src/finops_freshness_thresholds.py` calculates observation age from timezone-aware timestamps and compares it with an explicit maximum age. Empty datasets are stale. The implementation does not infer business impact or perform AWS mutations.
