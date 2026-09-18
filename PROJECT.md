@@ -153,3 +153,10 @@ The layer calculates coverage and utilization independently, reports uncovered s
 Review flags include low coverage, low utilization, unavailable evidence, and a coverage/utilization mismatch where coverage is at least 50% but utilization is below 50%. These are investigation signals, not purchase recommendations or savings estimates.
 
 The dashboard uses synthetic values only.
+
+
+## 16. FinOps Unit Economics — Milestone #25
+
+The unit economics layer relates observed cost to an explicitly supplied workload volume, such as requests or jobs. It reports cost per unit only when the unit denominator is available and preserves zero-volume evidence as unavailable.
+
+This is descriptive operational evidence. It does not infer workload ownership, fabricate workload metrics, forecast savings, or recommend an optimization action. Production use requires an approved workload metric source.
