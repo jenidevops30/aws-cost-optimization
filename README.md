@@ -179,3 +179,10 @@ The dashboard `dashboard/pages/18_FinOps_Unit_Economics.py` uses synthetic evide
 The platform can preserve an explicitly supplied operational signal alongside workload cost-per-unit evidence. Missing supporting signals remain unavailable rather than being represented as zero. This correlation view is descriptive and does not establish causality.
 
 The dashboard `dashboard/pages/20_FinOps_Unit_Economics_Correlation.py` uses synthetic evidence.
+
+
+## FinOps Unit Economics Trends
+
+The unit-economics trend layer compares observed cost-per-unit values across periods while preserving unavailable volume denominators. It reports descriptive percentage changes only; it does not claim causality or forecast savings.
+
+The dashboard `dashboard/pages/19_FinOps_Unit_Economics_Trends.py` uses synthetic evidence.

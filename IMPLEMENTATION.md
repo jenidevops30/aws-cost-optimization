@@ -259,3 +259,23 @@ row = correlation_rows([record])[0]
 ```
 
 The supporting signal is evidence to investigate alongside unit economics, not proof of causality or a savings estimate.
+
+
+## 16. FinOps Unit Economics Trends
+
+`src/finops_unit_economics_trend.py` provides `unit_cost_trend()` and `unit_cost_change()`.
+
+`unit_cost_change()` calculates percentage change in observed cost per unit between two records. It returns `None` when either unit volume is zero or the previous unit cost is zero.
+
+Example:
+
+```python
+from src.finops_unit_economics_trend import unit_cost_change
+
+change = unit_cost_change(
+    {"cost": 100.0, "units": 1000},
+    {"cost": 120.0, "units": 1500},
+)
+```
+
+The dashboard uses synthetic evidence only. Trend changes must be correlated with approved workload, infrastructure, and operational evidence before causal conclusions are made.
