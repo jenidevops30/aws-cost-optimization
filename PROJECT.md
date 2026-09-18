@@ -174,3 +174,10 @@ The layer is intentionally descriptive. Correlation evidence does not prove caus
 The trend layer extends unit economics with period-over-period cost-per-unit change. It requires valid unit volume in both periods and returns unavailable when a denominator is zero or the prior unit cost is zero.
 
 The result is descriptive evidence for investigation. A change in cost per unit does not establish why the change occurred and is not a savings forecast.
+
+
+## 20. FinOps Unit Economics Quality — Milestone #28
+
+The quality layer checks whether unit-economics records have valid dimensions, non-negative cost and volume, and an explicit source whenever volume is available. Zero-volume evidence remains unavailable.
+
+Quality flags are evidence-review signals only. They do not establish workload ownership, causality, savings, or an optimization action.
