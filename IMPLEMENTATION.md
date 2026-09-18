@@ -169,3 +169,41 @@ The project maintains exactly three canonical Markdown documents: `README.md`, `
 21. Multi-Account FinOps Intelligence — in progress.
 22. Cost Allocation Quality — in progress.
 23. Commitment Coverage Intelligence — in progress.
+
+
+## 12. Commitment Trend & Coverage/Utilization Correlation
+
+`src/finops_commitment_trend.py` defines `CommitmentTrendEvidence` and deterministic helpers:
+
+- `commitment_trend()` returns period/type trend rows.
+- `coverage_utilization_gap()` returns coverage minus utilization in percentage points when both measures are available.
+- `trend_review_flags()` identifies unavailable evidence, low coverage, low utilization, and coverage/utilization mismatch.
+
+Coverage uses `covered_spend / eligible_spend`. Utilization uses `utilized_value / committed_value`. Zero denominators return `None` rather than zero.
+
+Example:
+
+```python
+from src.finops_commitment_trend import CommitmentTrendEvidence, coverage_utilization_gap
+
+record = CommitmentTrendEvidence(
+    period="2026-08",
+    commitment_type="savings-plan",
+    eligible_spend=130.0,
+    covered_spend=104.0,
+    committed_value=100.0,
+    utilized_value=82.0,
+)
+
+gap = coverage_utilization_gap(record)
+```
+
+The dashboard `17_Commitment_Trend_Correlation.py` is synthetic and analysis-only. It does not purchase, cancel, modify, or resize commitments.
+
+### Evidence rules
+
+- Coverage and utilization are separate evidence dimensions.
+- A percentage-point gap is unavailable when either denominator is zero.
+- Low utilization is an investigation signal, not proof that a commitment should be changed.
+- No savings amount is derived from a utilization percentage.
+- Synthetic dashboard values are not production AWS billing evidence.
