@@ -293,3 +293,8 @@ The dashboard is synthetic and analysis-only. Production volume must come from a
 ## 20. FinOps Unit Economics Forecast Validation
 
 `src/finops_unit_economics_forecast_validation.py` compares observed and forecast unit costs. `mean_absolute_error()` returns `None` when no complete observations exist. Missing values remain unavailable rather than zero.
+
+
+## 22. FinOps Evidence Freshness & Lineage
+
+`src/finops_data_freshness_lineage.py` defines explicit dataset, period, source, observation timestamp, record count, and completeness metadata. Empty or incomplete evidence receives `review` status rather than being treated as zero-cost or zero-usage evidence.
