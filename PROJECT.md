@@ -186,3 +186,8 @@ Quality flags are evidence-review signals only. They do not establish workload o
 ## 23. FinOps Unit Economics Forecast Validation
 
 This milestone validates forecast observations using explicit forecast error and mean absolute error. It evaluates historical evidence only and does not guarantee future accuracy or imply causality.
+
+
+## 27. FinOps Data Quality & Reconciliation
+
+This milestone compares explicitly identified evidence sources using deterministic absolute differences and configurable tolerances. It preserves uncertainty about source authority and does not infer business impact from mismatches.
