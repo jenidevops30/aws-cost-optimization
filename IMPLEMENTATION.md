@@ -298,3 +298,7 @@ The dashboard is synthetic and analysis-only. Production volume must come from a
 ## 22. FinOps Evidence Freshness & Lineage
 
 `src/finops_data_freshness_lineage.py` defines explicit dataset, period, source, observation timestamp, record count, and completeness metadata. Empty or incomplete evidence receives `review` status rather than being treated as zero-cost or zero-usage evidence.
+
+
+### Budget Governance
+Budget-related evidence is analyzed in a read-only workflow. Budget signals do not trigger resource mutations or automated remediation.
