@@ -193,3 +193,8 @@ The dashboard `dashboard/pages/19_FinOps_Unit_Economics_Trends.py` uses syntheti
 The unit-economics quality layer validates whether workload volume has an explicit evidence source and preserves zero-volume or missing-source states as unavailable. It provides deterministic review flags rather than savings estimates or optimization recommendations.
 
 The dashboard `dashboard/pages/21_FinOps_Unit_Economics_Quality.py` uses synthetic evidence.
+
+
+## FinOps Unit Economics Forecast Validation
+
+Adds descriptive validation of observed unit cost against forecast evidence, including forecast error and mean absolute error. Missing observations remain unavailable.

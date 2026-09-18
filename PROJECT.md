@@ -181,3 +181,8 @@ The result is descriptive evidence for investigation. A change in cost per unit 
 The quality layer checks whether unit-economics records have valid dimensions, non-negative cost and volume, and an explicit source whenever volume is available. Zero-volume evidence remains unavailable.
 
 Quality flags are evidence-review signals only. They do not establish workload ownership, causality, savings, or an optimization action.
+
+
+## 23. FinOps Unit Economics Forecast Validation
+
+This milestone validates forecast observations using explicit forecast error and mean absolute error. It evaluates historical evidence only and does not guarantee future accuracy or imply causality.
