@@ -8,10 +8,12 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[1]
+from theme import inject_theme
 DEFAULT_DATA = ROOT / "data" / "sample-billing.csv"
 DEFAULT_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
 
 st.set_page_config(page_title="AWS FinOps Control Center", page_icon="☁️", layout="wide", initial_sidebar_state="expanded")
+inject_theme(st)
 
 st.markdown("""
 <style>
