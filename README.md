@@ -261,3 +261,6 @@ DevOps Engineer | AWS | Cloud Infrastructure | FinOps
 ## ⚠️ Disclaimer
 
 Production billing information must be sanitized before publication. Never commit AWS account IDs, credentials, private keys, private IPs, customer information, internal hostnames, or proprietary infrastructure code.
+
+
+Budget governance is part of the platform's documented FinOps controls; budget signals are treated as analysis evidence rather than automated remediation.
