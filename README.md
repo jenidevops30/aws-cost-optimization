@@ -165,3 +165,10 @@ Production billing information must be sanitized before publication. Never commi
 `src/finops_commitment_trend.py` compares commitment coverage and utilization across periods while preserving unavailable denominators. A coverage/utilization gap is reported only when both measures have valid evidence.
 
 The dashboard page `dashboard/pages/17_Commitment_Trend_Correlation.py` uses synthetic evidence and provides review flags such as low coverage, low utilization, and a coverage/utilization mismatch. It does not estimate savings or perform commitment changes.
+
+
+## FinOps Unit Economics
+
+`src/finops_unit_economics.py` provides evidence-preserving cost-per-unit analysis by workload and period. It keeps zero unit volume explicitly unavailable and does not turn unit economics into an unsupported savings forecast.
+
+The dashboard `dashboard/pages/18_FinOps_Unit_Economics.py` uses synthetic evidence for demonstration.
