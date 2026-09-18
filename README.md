@@ -200,6 +200,6 @@ The dashboard `dashboard/pages/21_FinOps_Unit_Economics_Quality.py` uses synthet
 Adds descriptive validation of observed unit cost against forecast evidence, including forecast error and mean absolute error. Missing observations remain unavailable.
 
 
-## FinOps Evidence Freshness Thresholds
+## FinOps Data Quality & Reconciliation
 
-Adds explicit maximum-age thresholds for evidence datasets and deterministic fresh/stale classification. Empty datasets remain stale rather than being treated as valid zero usage.
+Adds explicit source-to-source reconciliation with configurable tolerances. Mismatches are surfaced as data-quality review signals without assuming which source is authoritative.

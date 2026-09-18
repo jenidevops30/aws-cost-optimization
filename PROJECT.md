@@ -188,6 +188,6 @@ Quality flags are evidence-review signals only. They do not establish workload o
 This milestone validates forecast observations using explicit forecast error and mean absolute error. It evaluates historical evidence only and does not guarantee future accuracy or imply causality.
 
 
-## 26. FinOps Evidence Freshness Thresholds
+## 27. FinOps Data Quality & Reconciliation
 
-This milestone adds dataset-specific maximum-age thresholds. Evidence is classified as fresh only when its observation age is within the configured threshold and the dataset contains records. Staleness is a data-quality signal, not a cost or savings conclusion.
+This milestone compares explicitly identified evidence sources using deterministic absolute differences and configurable tolerances. It preserves uncertainty about source authority and does not infer business impact from mismatches.
