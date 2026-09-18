@@ -167,3 +167,10 @@ This is descriptive operational evidence. It does not infer workload ownership, 
 The correlation layer preserves cost, workload volume, and an optional supporting operational signal such as an approved utilization metric. It reports whether that supporting evidence is available without inferring a relationship when the signal is missing.
 
 The layer is intentionally descriptive. Correlation evidence does not prove causality, ownership, or savings opportunity. Production signals must come from an approved telemetry source.
+
+
+## 19. FinOps Unit Economics Trends — Milestone #26
+
+The trend layer extends unit economics with period-over-period cost-per-unit change. It requires valid unit volume in both periods and returns unavailable when a denominator is zero or the prior unit cost is zero.
+
+The result is descriptive evidence for investigation. A change in cost per unit does not establish why the change occurred and is not a savings forecast.
