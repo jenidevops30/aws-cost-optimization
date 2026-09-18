@@ -195,6 +195,6 @@ The unit-economics quality layer validates whether workload volume has an explic
 The dashboard `dashboard/pages/21_FinOps_Unit_Economics_Quality.py` uses synthetic evidence.
 
 
-## FinOps Unit Economics Anomaly Intelligence
+## FinOps Unit Economics Forecast
 
-Adds deterministic anomaly-review signals for observed unit cost changes. The feature identifies material deviations from a rolling historical baseline without claiming causality, savings, or an optimization action.
+Adds a transparent historical-mean forecast for observed unit cost, with explicit evidence availability and confidence based on observation count. It is descriptive and does not guarantee future cost or savings.

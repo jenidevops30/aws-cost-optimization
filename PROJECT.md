@@ -183,8 +183,8 @@ The quality layer checks whether unit-economics records have valid dimensions, n
 Quality flags are evidence-review signals only. They do not establish workload ownership, causality, savings, or an optimization action.
 
 
-## 21. FinOps Unit Economics Anomaly Intelligence
+## 22. FinOps Unit Economics Forecast
 
-This milestone adds evidence-preserving anomaly review for unit economics. For each workload, the observed unit cost is compared with the mean of prior periods. A configurable relative-deviation threshold produces a review signal.
+This milestone extends unit economics with a simple historical-mean next-period unit-cost forecast. Forecast availability depends on valid non-zero unit volumes. Confidence is intentionally low with fewer than three observations and medium with three or more observations.
 
-An anomaly is a descriptive statistical signal only. It does not establish root cause, ownership, savings, or a required remediation.
+The forecast is descriptive, not a guarantee and not a savings estimate.
