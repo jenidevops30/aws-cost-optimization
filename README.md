@@ -172,3 +172,10 @@ The dashboard page `dashboard/pages/17_Commitment_Trend_Correlation.py` uses syn
 `src/finops_unit_economics.py` provides evidence-preserving cost-per-unit analysis by workload and period. It keeps zero unit volume explicitly unavailable and does not turn unit economics into an unsupported savings forecast.
 
 The dashboard `dashboard/pages/18_FinOps_Unit_Economics.py` uses synthetic evidence for demonstration.
+
+
+## FinOps Unit Economics Correlation
+
+The platform can preserve an explicitly supplied operational signal alongside workload cost-per-unit evidence. Missing supporting signals remain unavailable rather than being represented as zero. This correlation view is descriptive and does not establish causality.
+
+The dashboard `dashboard/pages/20_FinOps_Unit_Economics_Correlation.py` uses synthetic evidence.
