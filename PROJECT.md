@@ -181,3 +181,10 @@ The result is descriptive evidence for investigation. A change in cost per unit 
 The quality layer checks whether unit-economics records have valid dimensions, non-negative cost and volume, and an explicit source whenever volume is available. Zero-volume evidence remains unavailable.
 
 Quality flags are evidence-review signals only. They do not establish workload ownership, causality, savings, or an optimization action.
+
+
+## 21. FinOps Unit Economics Anomaly Intelligence
+
+This milestone adds evidence-preserving anomaly review for unit economics. For each workload, the observed unit cost is compared with the mean of prior periods. A configurable relative-deviation threshold produces a review signal.
+
+An anomaly is a descriptive statistical signal only. It does not establish root cause, ownership, savings, or a required remediation.

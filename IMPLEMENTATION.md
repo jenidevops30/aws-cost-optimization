@@ -288,3 +288,10 @@ The dashboard uses synthetic evidence only. Trend changes must be correlated wit
 Available unit volume requires an explicit source. Zero volume remains unavailable. Flags include `no-evidence`, `zero-volume-evidence`, `missing-volume-source`, and `zero-cost-evidence`.
 
 The dashboard is synthetic and analysis-only. Production volume must come from an approved workload metric source.
+
+
+## 18. FinOps Unit Economics Anomaly Intelligence
+
+`src/finops_unit_economics_anomaly.py` provides deterministic baseline and anomaly calculations. A period requires a valid non-zero unit volume to calculate unit cost. The baseline uses prior observations only; the current period is not included in its own baseline.
+
+Missing history or zero volume is represented as unavailable rather than zero.
