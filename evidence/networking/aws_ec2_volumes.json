@@ -1,0 +1,30 @@
+[
+  {
+    "ID": "vol-0aed05653eba4b12f",
+    "Size": 20,
+    "Type": "gp3",
+    "State": "in-use",
+    "AttachedInstance": "i-0b1b9f76e2772395c"
+  },
+  {
+    "ID": "vol-07b2e9d56697e1679",
+    "Size": 30,
+    "Type": "gp3",
+    "State": "in-use",
+    "AttachedInstance": "i-023d2c10e465eaa4a"
+  },
+  {
+    "ID": "vol-03c20664f97484724",
+    "Size": 30,
+    "Type": "gp3",
+    "State": "in-use",
+    "AttachedInstance": "i-0f60e2e9de7d869b1"
+  },
+  {
+    "ID": "vol-067c29808ebaefe89",
+    "Size": 20,
+    "Type": "gp3",
+    "State": "in-use",
+    "AttachedInstance": "i-0b3fce488ca59e42c"
+  }
+]

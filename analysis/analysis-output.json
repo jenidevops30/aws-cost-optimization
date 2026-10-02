@@ -1,0 +1,52 @@
+{
+  "project": "AWS Cost Optimization & FinOps",
+  "generated": "2026-10-02T11:00:53.405797",
+  "monthly_summary": {
+    "December": {
+      "cost": 813.4226896954,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "January": {
+      "cost": 762.6151718559,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "February": {
+      "cost": 500.55580974320003,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "March": {
+      "cost": 481.3078717585,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "April": {
+      "cost": 467.8081641993,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "May": {
+      "cost": 372.3222163621,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "June": {
+      "cost": 326.16699649739996,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "July": {
+      "cost": 327.7318909836,
+      "absolute_change": 0,
+      "percentage_change": 0
+    },
+    "August": {
+      "cost": 357.42233064,
+      "absolute_change": 0,
+      "percentage_change": 0
+    }
+  },
+  "category_analysis": {}
+}

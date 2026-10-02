@@ -1,0 +1,20 @@
+[
+  {
+    "ID": "quickhunt-db",
+    "Class": "db.t4g.micro",
+    "Engine": "postgres",
+    "Status": "available",
+    "Storage": 20,
+    "StorageType": "gp3",
+    "MultiAZ": false
+  },
+  {
+    "ID": "wishlist-db",
+    "Class": "db.t4g.medium",
+    "Engine": "mysql",
+    "Status": "available",
+    "Storage": 200,
+    "StorageType": "gp3",
+    "MultiAZ": false
+  }
+]

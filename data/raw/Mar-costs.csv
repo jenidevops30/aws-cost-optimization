@@ -1,0 +1,10 @@
+LineItem/UsageType,LineItem/UnblendedCost,LineItem/UsageType,UsageType/Description,Usage/AvailabilityZone,Usage/InstanceType,Usage/Operation,Billing/Month
+EC2-Compute,207.4565844201,BoxUsage:c6g.xlarge,EC2 Compute,c6g.xlarge,RunInstances,March 2026
+RDS,107.4809791404,DBInstance:db.t4g.small,RDS MySQL,db.t4g.small,CreateDBInstance,March 2026
+ELB,51.8536810912,LoadBalancer:application,ALB,application,CreateLoadBalancer,March 2026
+EC2-Other,11.4745096676,EC2-Other,EC2 Other,,,March 2026
+VPC,27.63844588,VPC,VPC,,,March 2026
+CloudWatch,0.00016,CloudWatch,CloudWatch,,,March 2026
+S3,0.1335115592,S3,S3,,,March 2026
+Other,1.80,Other,Other,,,March 2026
+Tax,73.47,Tax,Tax,,,March 2026

@@ -1,0 +1,142 @@
+[
+  {
+    "month": "2025-10-01",
+    "instances": {
+      "NoInstanceType": 8.86,
+      "t3.micro": 7.74
+    }
+  },
+  {
+    "month": "2025-11-01",
+    "instances": {
+      "NoInstanceType": 114.18,
+      "c5.large": 8.93,
+      "db.t3.medium": 22.25,
+      "db.t3.micro": 4.04,
+      "db.t3.small": 8.23,
+      "t3.medium": 9.09,
+      "t3.micro": 15.14,
+      "t3.small": 16.28
+    }
+  },
+  {
+    "month": "2025-12-01",
+    "instances": {
+      "NoInstanceType": 477.23,
+      "c5.large": 10.69,
+      "c5.xlarge": 58.06,
+      "db.m5.xlarge": 0.94,
+      "db.t3.large": 13.59,
+      "db.t3.medium": 43.64,
+      "db.t3.small": 26.78,
+      "t3.2xlarge": 0.1,
+      "t3.medium": 10.81,
+      "t3.micro": 18.68,
+      "t3.small": 19.17,
+      "t3.xlarge": 133.75
+    }
+  },
+  {
+    "month": "2026-01-01",
+    "instances": {
+      "NoInstanceType": 399.14,
+      "c5.xlarge": 171.87,
+      "c6g.large": 0.07,
+      "c6g.xlarge": 72.02,
+      "c7g.xlarge": 0.0,
+      "db.t3.medium": 50.59,
+      "db.t3.small": 26.79,
+      "t3.micro": 14.78,
+      "t3.small": 27.36
+    }
+  },
+  {
+    "month": "2026-02-01",
+    "instances": {
+      "NoInstanceType": 250.86,
+      "c6g.large": 0.48,
+      "c6g.xlarge": 149.08,
+      "db.t3.medium": 34.48,
+      "db.t3.small": 24.19,
+      "db.t4g.medium": 10.72,
+      "t3.micro": 5.6,
+      "t3.small": 25.08
+    }
+  },
+  {
+    "month": "2026-03-01",
+    "instances": {
+      "NoInstanceType": 226.64,
+      "c6g.xlarge": 157.8,
+      "db.t3.small": 26.78,
+      "db.t4g.medium": 48.36,
+      "t3.micro": 6.67,
+      "t3.small": 15.46
+    }
+  },
+  {
+    "month": "2026-04-01",
+    "instances": {
+      "NoInstanceType": 245.29,
+      "c6g.large": 11.2,
+      "c6g.xlarge": 122.94,
+      "db.t3.small": 25.22,
+      "db.t4g.medium": 46.8,
+      "db.t4g.small": 0.63,
+      "t3.micro": 1.61,
+      "t3.small": 14.09,
+      "t4g.micro": 0.03
+    }
+  },
+  {
+    "month": "2026-05-01",
+    "instances": {
+      "NoInstanceType": 192.83,
+      "c6g.large": 0.11,
+      "c6g.xlarge": 104.48,
+      "db.t4g.medium": 48.36,
+      "db.t4g.small": 23.81,
+      "t4g.micro": 2.73
+    }
+  },
+  {
+    "month": "2026-06-01",
+    "instances": {
+      "NoInstanceType": 165.17,
+      "c6g.xlarge": 105.72,
+      "db.t4g.medium": 10.9,
+      "db.t4g.small": 40.58,
+      "t4g.micro": 4.42,
+      "t4g.xlarge": 0.28
+    }
+  },
+  {
+    "month": "2026-07-01",
+    "instances": {
+      "NoInstanceType": 165.59,
+      "c6g.xlarge": 110.15,
+      "db.t4g.small": 47.35,
+      "t4g.micro": 4.65
+    }
+  },
+  {
+    "month": "2026-08-01",
+    "instances": {
+      "NoInstanceType": 180.16,
+      "c6g.xlarge": 123.33,
+      "db.t4g.small": 47.62,
+      "t4g.micro": 6.25
+    }
+  },
+  {
+    "month": "2026-09-01",
+    "instances": {
+      "NoInstanceType": 172.93,
+      "c6g.xlarge": 129.76,
+      "db.t4g.medium": 11.84,
+      "db.t4g.micro": 2.56,
+      "db.t4g.small": 34.87,
+      "t4g.micro": 5.5
+    }
+  }
+]

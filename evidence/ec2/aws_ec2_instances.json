@@ -1,0 +1,42 @@
+[
+  [
+    {
+      "ID": "i-0b3fce488ca59e42c",
+      "Type": "t4g.small",
+      "State": "running",
+      "AZ": "us-east-1c",
+      "Architecture": "arm64",
+      "Name": "Quickhunt-Prod-Graviton"
+    }
+  ],
+  [
+    {
+      "ID": "i-0b1b9f76e2772395c",
+      "Type": "t4g.micro",
+      "State": "running",
+      "AZ": "us-east-1c",
+      "Architecture": "arm64",
+      "Name": "Quickhunt-Dev-Graviton"
+    }
+  ],
+  [
+    {
+      "ID": "i-023d2c10e465eaa4a",
+      "Type": "c6g.xlarge",
+      "State": "running",
+      "AZ": "us-east-1f",
+      "Architecture": "arm64",
+      "Name": "Wishlist"
+    }
+  ],
+  [
+    {
+      "ID": "i-0f60e2e9de7d869b1",
+      "Type": "c6g.xlarge",
+      "State": "running",
+      "AZ": "us-east-1f",
+      "Architecture": "arm64",
+      "Name": "Wishlist"
+    }
+  ]
+]
