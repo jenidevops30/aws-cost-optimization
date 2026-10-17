@@ -10,7 +10,8 @@ A local-first Python toolkit and case study for reviewing AWS billing exports, c
 - Normalizes the billing columns used by this repository, including duplicate LineItem/UsageType headers.
 - Calculates monthly totals and compares them with the recorded invoice baseline where one exists.
 - Aggregates the supported categories EC2 Instances, RDS, ELB, VPC, and EC2 Other from observed line items.
-- Writes CSV and JSON outputs under data/processed/ and analysis/.
+- Writes deterministic CSV and JSON outputs under data/processed/ and analysis/.
+- CI regenerates reports and fails if committed outputs are stale.
 - Keeps AWS evidence collection separate from local CSV analysis.
 
 ## Repository layout
@@ -67,7 +68,7 @@ The script reads supported monthly CSV files and writes:
 - data/processed/optimization-candidates.csv
 - analysis/analysis-output.json
 
-It prints a warning when derived totals do not reconcile to the recorded baseline. A month without a non-estimated authoritative baseline is reported as not comparable, not as a failed match.
+The JSON report intentionally omits wall-clock generation metadata so identical inputs produce identical output. CI regenerates reports and checks that committed artifacts match the source data. It prints a warning when derived totals do not reconcile to the recorded baseline. A month without a non-estimated authoritative baseline is reported as not comparable, not as a failed match.
 
 ## Current baseline reported by the case study
 
