@@ -44,3 +44,6 @@ jobs:
 
       - name: Smoke-test local billing analysis
         run: python scripts/analyze_costs.py
+
+      - name: Verify committed reports are up to date
+        run: git diff --exit-code -- data/processed/monthly-cost-summary.csv data/processed/category-comparison.csv data/processed/optimization-candidates.csv analysis/analysis-output.json
