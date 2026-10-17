@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -252,7 +252,6 @@ def generate_reports(monthly_df: pd.DataFrame, category_df: pd.DataFrame) -> dic
 
     payload = {
         "project": "AWS Cost Optimization & FinOps",
-        "generated": datetime.now(timezone.utc).isoformat(),
         "monthly_summary": {
             str(row.billing_month): {
                 "cost": float(row.total_cost),
