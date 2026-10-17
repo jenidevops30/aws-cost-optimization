@@ -1,10 +1,11 @@
-billing_month,total_cost,month,derived_cost,authoritative_cost,difference,variance_percent,baseline_match
-December,813.4226896954,February,500.55580974320003,N/A,N/A,N/A,False
-January,762.6151718559,April,467.8081641993,N/A,N/A,N/A,False
-February,500.55580974320003,March,481.3078717585,N/A,N/A,N/A,False
-March,481.3078717585,July,327.7318909836,N/A,N/A,N/A,False
-April,467.8081641993,December,813.4226896954,N/A,N/A,N/A,False
-May,372.3222163621,August,357.42233064,N/A,N/A,N/A,False
-June,326.16699649739996,June,326.16699649739996,N/A,N/A,N/A,False
-July,327.7318909836,May,372.3222163621,N/A,N/A,N/A,False
-August,357.42233064,January,762.6151718559,N/A,N/A,N/A,False
+billing_month,total_cost,authoritative_cost,difference,variance_percent,baseline_match
+December 2025,813.42,813.43,-0.01,0.00,true
+January 2026,762.62,762.62,0.00,0.00,true
+February 2026,500.56,500.50,0.06,0.01,false
+March 2026,481.31,481.71,-0.40,-0.08,false
+April 2026,467.81,467.80,0.01,0.00,true
+May 2026,372.32,372.32,0.00,0.00,true
+June 2026,326.17,327.07,-0.90,-0.28,false
+July 2026,327.73,327.73,0.00,0.00,true
+August 2026,357.42,357.36,0.06,0.02,false
+September 2026,142.00,,,,
