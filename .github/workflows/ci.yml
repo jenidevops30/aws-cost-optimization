@@ -41,3 +41,6 @@ jobs:
 
       - name: Compile Python sources
         run: python -m compileall -q scripts tests
+
+      - name: Smoke-test local billing analysis
+        run: python scripts/analyze_costs.py
