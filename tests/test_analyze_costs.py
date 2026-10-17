@@ -85,3 +85,39 @@ def test_baseline_missing_for_september_is_not_marked_failed():
     result = ac.verify_against_baseline(frame)
     assert pd.isna(result.loc[0, "baseline_match"])
     assert pd.isna(result.loc[0, "authoritative_cost"])
+
+
+
+def test_generated_reports_are_deterministic_and_have_stable_schema(tmp_path, monkeypatch):
+    processed_dir = tmp_path / "processed"
+    analysis_dir = tmp_path / "analysis"
+    monkeypatch.setattr(ac, "PROCESSED_DATA_DIR", processed_dir)
+    monkeypatch.setattr(ac, "ANALYSIS_DIR", analysis_dir)
+
+    monthly = pd.DataFrame([{
+        "billing_month": "December 2025",
+        "total_cost": 813.43,
+        "authoritative_cost": 813.43,
+        "difference": 0.0,
+        "variance_percent": 0.0,
+        "baseline_match": True,
+    }])
+    categories = pd.DataFrame([{
+        "billing_month": "December 2025",
+        "category": "EC2 Instances",
+        "cost": 244.96,
+    }])
+
+    first_payload = ac.generate_reports(monthly, categories)
+    first_json = (analysis_dir / "analysis-output.json").read_bytes()
+    second_payload = ac.generate_reports(monthly, categories)
+    second_json = (analysis_dir / "analysis-output.json").read_bytes()
+
+    assert first_json == second_json
+    assert "generated" not in first_payload
+    assert first_payload == second_payload
+    assert set(first_payload) == {"project", "monthly_summary", "category_analysis"}
+    assert first_payload["monthly_summary"]["December 2025"]["cost"] == 813.43
+    assert (processed_dir / "monthly-cost-summary.csv").is_file()
+    assert (processed_dir / "category-comparison.csv").is_file()
+    assert (processed_dir / "optimization-candidates.csv").is_file()
