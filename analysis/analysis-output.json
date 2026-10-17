@@ -5,14 +5,14 @@
       "cost": 813.42,
       "authoritative_cost": 813.43,
       "difference": -0.01,
-      "variance_percent": 0,
+      "variance_percent": 0.0,
       "baseline_match": true
     },
     "January 2026": {
       "cost": 762.62,
       "authoritative_cost": 762.62,
-      "difference": 0,
-      "variance_percent": 0,
+      "difference": 0.0,
+      "variance_percent": 0.0,
       "baseline_match": true
     },
     "February 2026": {
@@ -33,14 +33,14 @@
       "cost": 467.81,
       "authoritative_cost": 467.8,
       "difference": 0.01,
-      "variance_percent": 0,
+      "variance_percent": 0.0,
       "baseline_match": true
     },
     "May 2026": {
       "cost": 372.32,
       "authoritative_cost": 372.32,
-      "difference": 0,
-      "variance_percent": 0,
+      "difference": 0.0,
+      "variance_percent": 0.0,
       "baseline_match": true
     },
     "June 2026": {
@@ -53,8 +53,8 @@
     "July 2026": {
       "cost": 327.73,
       "authoritative_cost": 327.73,
-      "difference": 0,
-      "variance_percent": 0,
+      "difference": 0.0,
+      "variance_percent": 0.0,
       "baseline_match": true
     },
     "August 2026": {
@@ -65,7 +65,7 @@
       "baseline_match": false
     },
     "September 2026": {
-      "cost": 142,
+      "cost": 142.0,
       "authoritative_cost": null,
       "difference": null,
       "variance_percent": null,
