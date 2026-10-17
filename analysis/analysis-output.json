@@ -1,52 +1,112 @@
 {
   "project": "AWS Cost Optimization & FinOps",
-  "generated": "2026-10-02T11:00:53.405797",
   "monthly_summary": {
-    "December": {
-      "cost": 813.4226896954,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "December 2025": {
+      "cost": 813.42,
+      "authoritative_cost": 813.43,
+      "difference": -0.01,
+      "variance_percent": -0.0,
+      "baseline_match": true
     },
-    "January": {
-      "cost": 762.6151718559,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "January 2026": {
+      "cost": 762.62,
+      "authoritative_cost": 762.62,
+      "difference": 0.0,
+      "variance_percent": 0.0,
+      "baseline_match": true
     },
-    "February": {
-      "cost": 500.55580974320003,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "February 2026": {
+      "cost": 500.56,
+      "authoritative_cost": 500.5,
+      "difference": 0.06,
+      "variance_percent": 0.01,
+      "baseline_match": false
     },
-    "March": {
-      "cost": 481.3078717585,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "March 2026": {
+      "cost": 481.31,
+      "authoritative_cost": 481.71,
+      "difference": -0.4,
+      "variance_percent": -0.08,
+      "baseline_match": false
     },
-    "April": {
-      "cost": 467.8081641993,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "April 2026": {
+      "cost": 467.81,
+      "authoritative_cost": 467.8,
+      "difference": 0.01,
+      "variance_percent": 0.0,
+      "baseline_match": true
     },
-    "May": {
-      "cost": 372.3222163621,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "May 2026": {
+      "cost": 372.32,
+      "authoritative_cost": 372.32,
+      "difference": 0.0,
+      "variance_percent": 0.0,
+      "baseline_match": true
     },
-    "June": {
-      "cost": 326.16699649739996,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "June 2026": {
+      "cost": 326.17,
+      "authoritative_cost": 327.07,
+      "difference": -0.9,
+      "variance_percent": -0.28,
+      "baseline_match": false
     },
-    "July": {
-      "cost": 327.7318909836,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "July 2026": {
+      "cost": 327.73,
+      "authoritative_cost": 327.73,
+      "difference": 0.0,
+      "variance_percent": 0.0,
+      "baseline_match": true
     },
-    "August": {
-      "cost": 357.42233064,
-      "absolute_change": 0,
-      "percentage_change": 0
+    "August 2026": {
+      "cost": 357.42,
+      "authoritative_cost": 357.36,
+      "difference": 0.06,
+      "variance_percent": 0.02,
+      "baseline_match": false
+    },
+    "September 2026": {
+      "cost": 142.0,
+      "authoritative_cost": null,
+      "difference": null,
+      "variance_percent": null,
+      "baseline_match": null
     }
   },
-  "category_analysis": {}
+  "category_analysis": [
+    {
+      "category": "EC2 Instances",
+      "dec_2025": 244.96,
+      "jun_2026": 115.56,
+      "absolute_change": -129.4,
+      "percentage_change": -52.82
+    },
+    {
+      "category": "EC2 Other",
+      "dec_2025": 29.89,
+      "jun_2026": 9.3,
+      "absolute_change": -20.59,
+      "percentage_change": -68.89
+    },
+    {
+      "category": "ELB",
+      "dec_2025": 116.88,
+      "jun_2026": 46.15,
+      "absolute_change": -70.73,
+      "percentage_change": -60.52
+    },
+    {
+      "category": "RDS",
+      "dec_2025": 205.05,
+      "jun_2026": 79.72,
+      "absolute_change": -125.33,
+      "percentage_change": -61.12
+    },
+    {
+      "category": "VPC",
+      "dec_2025": 46.42,
+      "jun_2026": 24.98,
+      "absolute_change": -21.44,
+      "percentage_change": -46.19
+    }
+  ]
 }
