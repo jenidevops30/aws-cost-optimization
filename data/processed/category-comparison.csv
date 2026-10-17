@@ -3,11 +3,11 @@ April 2026,EC2 Instances,202.38
 April 2026,EC2 Other,9.51
 April 2026,ELB,51.92
 April 2026,RDS,104.09
-April 2026,VPC,24.20
-August 2026,EC2 Instances,137.40
+April 2026,VPC,24.2
+August 2026,EC2 Instances,137.4
 August 2026,EC2 Other,8.55
 August 2026,ELB,52.34
-August 2026,RDS,78.50
+August 2026,RDS,78.5
 August 2026,VPC,25.52
 December 2025,EC2 Instances,244.96
 December 2025,EC2 Other,29.89
@@ -24,13 +24,13 @@ January 2026,EC2 Other,89.27
 January 2026,ELB,72.08
 January 2026,RDS,120.13
 January 2026,VPC,37.97
-July 2026,EC2 Instances,121.70
+July 2026,EC2 Instances,121.7
 July 2026,EC2 Other,9.04
 July 2026,ELB,45.64
 July 2026,RDS,75.28
 July 2026,VPC,25.48
 June 2026,EC2 Instances,115.56
-June 2026,EC2 Other,9.30
+June 2026,EC2 Other,9.3
 June 2026,ELB,46.15
 June 2026,RDS,79.72
 June 2026,VPC,24.98
@@ -48,4 +48,4 @@ September 2026,EC2 Instances,55.34
 September 2026,EC2 Other,3.58
 September 2026,ELB,16.29
 September 2026,RDS,33.65
-September 2026,VPC,11.00
+September 2026,VPC,11.0
