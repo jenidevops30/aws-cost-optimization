@@ -86,6 +86,12 @@ The JSON report intentionally omits wall-clock generation metadata so identical 
 
 These figures are reference values for reconciliation, not substitutes for calculated CSV totals. The Cost Explorer evidence marks September 2026 as estimated; it is intentionally excluded from the authoritative baseline until final billing data is available.
 
+## Case study and engineering records
+
+- [AWS Cost Optimization Case Study](docs/case-study.md) — reported baseline-to-comparison result, methodology, validation checklist, and limitations.
+- [Cost Optimization Decision Records](docs/decisions/README.md) — decision record guidance and template.
+- [Evidence Register](evidence/README.md) — claim status, source traceability, and publication safety checklist.
+
 ## Architecture and evidence
 
 - [Architecture case study](architecture/README.md)
